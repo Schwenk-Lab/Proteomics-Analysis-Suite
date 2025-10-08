@@ -1,7 +1,7 @@
 ## Authorship
 Developed by Erik Kling Åhlén (Student, KTH), 2025
 If you use this code in your research, please cite:
-> Erik Kling Åhlén (2025). *KARMA: Interactive Analysis Suite for Proteomic Data*. GitHub. https://github.com/ZTKL/KARMA
+> Erik Kling Åhlén (2025). *Thesis-Proteomics-2025: Interactive Analysis Suite for Proteomic Data*. GitHub. https://github.com/ZTKL/Thesis-Proteomics-2025
 
 This repository contains code for the **Interactive Analysis Suite for Proteomic Data**, developed as a part of my Master's thesis *Deciphering the Heterogeneity in Plasma Proteomic Signatures to Reveal Breast Cancer Risk Phenotypes* at KTH in 2025. Earlier development versions were maintained in a private KTH Git repository; this public release contains the finalized scripts prepared for my Master’s thesis.
 
