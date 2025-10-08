@@ -1,0 +1,144 @@
+# To Reproduce results from study:
+#####################################
+Access to data from the KARMA study can be requested from https://karmastudy.org/contact/data-access/
+
+
+Step 1: Load all functions found in the following R scripts to the RStudio environment:
+- StudySpecFuncs.R
+- HelperFunctions.R
+- QCFunctions.R
+- HandleNAs.R
+- VisualizationFunctions.R
+- DimensionReduction.R
+- MainRunnerFinal.R
+- ConfounderIdentification.R
+- StratFuncs.R
+- PreProcessing.R
+- ClusterParameterOptimization.R
+- WrapperFuncs.R
+- AnalysisFunctions.R
+- DifferentialAbundanceFunctions.R
+
+Step 2: Install and load all packages listed in PackLoader.R 
+- Some needs to be installed via BiocManager
+- ProtPQN can be found on the SchwenkLab GitHub page
+
+Step 3: Prepare data
+- npx: protein abundance data (samples as rows, proteins as columns)
+- sinfo: clinical information (samples as rows)
+- binfo: protein information (proteins as rows)
+
+Step 4: Start Main Menu script
+- run_main_menu(sinfo, binfo, npx)
+
+Step 5: Run parameters
+- Extract data: 
+	- all regions, all cancer, all panels
+	- do not remove any samples (cancer)
+	- filter freq_below_LOD using cutoff value 0.1
+
+- Set Global Seed to 42
+
+
+- QC Workflow (pt1)
+	- Setup Variables (Region, all, all, all)
+	- Remove technical duplicates
+		- Based on freq_below_LOD: not from primary blood draw
+	- Remove samples Flagged with a WARNING
+	- Handle NAs
+		- Sample Trait Data:
+			- freq_below_lod
+			- age
+			- bmi
+			- stratus_densearea_cm2
+			- menopause_status
+			- mht_status
+			- alcohol_gram_week
+			- smoking_status
+		- Use complete.cases option
+
+- Exit out of the suite and run these commands in console to save time:
+	- all.sinfo <- select.sinfo
+	- all.npx <- select.npx
+
+- Start Main menu again:
+
+For both cohorts:
+- Stratification
+	- Stratification based on selected traits
+		- region
+		- (choose the region you wish to work with)
+	- Drop unused factor levels
+
+- QC- workflow (pt2)
+	- Identify sample outliers with olink analyse
+		- PCA plot: use SD= 3 (for both x and y)
+		- QC plot: use SD = 3 (for both x and y)
+		- Remove Outliers
+			- found in 1 plot
+		- Exit
+
+- Preprocessing (pt1):
+	- Normalize:
+		- Prot_PQN (multiple panels)
+	- Adjustment:
+		- freq_below_lod, age, bmi, plasmaAge
+		- Linear regression option (residualization)
+
+- QC workflow (pt3):
+	- Hierarchical Clustering for sample outlier identification
+		- Remove samples that are their own small branch far separated from the rest of the branches (2 samples in Sthlm, 1 in skane)	
+
+- Preprocessing (pt2)
+	- Confounder identification
+		- Surrogate variable analysis:
+			- CancerTime, stratus_densearea_cm2, menopause_status, mht_status, alcohol_gram_week, smoking_status
+			- Automatic Estimation
+
+- Exit out of suite and save the region filtered npx, sinfo and binfo variables as (region).npx etc... 
+
+- Now start again: 
+	- For reproduction of initial PCA
+		- Dimensionality reduction
+			- PCA
+			- Save the amount of components representing ~75% of the variance
+	
+		- For reproduction of results adjusted for SVA:
+			- Adjustment for Confounders...
+				- Specify the surrogate variables
+				- Linear regression option
+
+			- Dimensionality reduction of choice:
+				- PCA: save components covering 75% variance
+				- UMAP: n_comp = 2, min_dist = 0.1, n_neigh = 20, seed = 42
+				- PLS-DA: 
+					- CancerTime
+					- Max components to consider = 10
+					- centroids.dist
+					- keep number of components with lowest classification error rate (>1)
+					- Do not sort by variance
+
+- Clustering parameter optimization:
+	- Either:
+			- Optimal Clusters GMM ClusterR (diagonal covariance)
+				- BIC
+				- eucl_dist
+				- max clusters = 15
+			- Optimal K for SpectralClustering		
+				- max clusters = 15
+				- boot	= 100
+			- Optimal K for k-means
+				- max clusters = 15		
+				- boot = 100
+
+	- Or: specify the amount of clusters for each method from the amounts of clusters found in the study using the manual assignment functions
+
+- Clustering and Analysis:
+	- Stability analysis: 
+		- 200 bootstraps
+
+	- Differential Abundance Analysis:
+		- use unreduced.npx
+	
+- Use the analysis functions further following documentation in the Thesis (such as which clusters to contrast) to replicate all analyses included in the study.
+
