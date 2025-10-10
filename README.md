@@ -17,3 +17,31 @@ The suite is designed to provide a interactive workflow facilitating exploratory
 - **Analysis** - Including cluster stability analysis, similarity analysis, correlation analysis, and differential abundance analysis.
 - **Visualization** - options for visualization of obtained results.
 
+## Running the Interactive Analysis Suite
+Step 1: Load all functions found in the following R scripts to the RStudio environment:
+- StudySpecFuncs.R
+- HelperFunctions.R
+- QCFunctions.R
+- HandleNAs.R
+- VisualizationFunctions.R
+- DimensionReduction.R
+- MainRunnerFinal.R
+- ConfounderIdentification.R
+- StratFuncs.R
+- PreProcessing.R
+- ClusterParameterOptimization.R
+- WrapperFuncs.R
+- AnalysisFunctions.R
+- DifferentialAbundanceFunctions.R
+
+Step 2: Install and load all packages listed in PackLoader.R 
+- Some needs to be installed via BiocManager
+- ProtPQN can be found on the SchwenkLab GitHub page
+
+Step 3: Prepare data
+- npx: protein abundance data (samples as rows, proteins as columns)
+- sinfo: clinical information (samples as rows)
+- binfo: protein information (proteins as rows)
+
+Step 4: Start Main Menu script
+- run_main_menu(sinfo, binfo, npx)
