@@ -27,17 +27,31 @@ impute_na_median <- function(x) {
 # Handle NAs
 ################################################################################
 handle_NAs <- function(npx, sinfo = NULL, choices = NULL, seed = global_seed,
-                       NA_handling_log <- NULL) {
+                       NA_handling_log = NULL) {
   interactive <- is.null(choices)
-  if (is.null("NA_handling_log")) {
+  
+  # Initialize optional variables
+  maxiter <- NA_integer_
+  ntree   <- NA_integer_
+  n_pcs   <- NA_integer_
+  q       <- NA_real_
+  selected_indices <- NA
+  
+  # Initialize log if not provided
+  if (is.null(NA_handling_log)) {
     NA_handling_log <- data.frame(
       data_choice = integer(),
       option      = integer(),
       columns     = I(list()),
+      maxiter     = integer(),
+      ntree       = integer(),
+      n_pcs       = integer(),
+      q           = numeric(),
       stringsAsFactors = FALSE
     )
   }
-  # Prompt for which data to process:
+  
+  # Prompt for which data to process
   if (interactive) {
     cat("\nWhich data would you like to process?\n")
     cat(" 1 = Abundance data (npx)\n")
@@ -47,222 +61,142 @@ handle_NAs <- function(npx, sinfo = NULL, choices = NULL, seed = global_seed,
     data_choice <- choices$data_choice
   }
   
-  # For abundance Data
+  # Branch for Abundance data
   if (!is.na(data_choice) && data_choice == 1) {
     if (interactive) {
       cat("\nCurrent number of NAs in Abundance data:", sum(is.na(npx)), "\n")
       cat("\nNA Handling Options:\n")
-      cat(" 1 = minProb\n 2 = RandomForest\n 3 = kNN\n 4 = SVD\n 5 = minDet\n
-          6 = complete.cases\n 7 = median\n 0 = Cancel\n")
+      cat(" 1 = minProb\n 2 = RandomForest\n 3 = kNN\n 4 = SVD\n 5 = minDet\n 6 = complete.cases\n 7 = median\n 0 = Cancel\n")
       option <- as.numeric(readline(prompt = "Select an option: "))
     } else {
       option <- choices$option
     }
-    if (is.na(option) || option == 0) 
-      return(list(npx = npx, sinfo = sinfo))
-    if (option == 1) { 
-      cat("Imputing missing values in Abundance data using minProb method...")
-      result.npx <- t(impute_na(t(npx), seed = seed))
-      } else if (option == 2) {
-        if (interactive) {
-          maxiter <- as.numeric(readline("Enter maxiter (default = 5): "))
-          ntree <- as.numeric(readline("Enter ntree (default = 100): "))
-          if (is.na(maxiter)) maxiter <- 5
-          if (is.na(ntree)) ntree <- 100
-        } else{
-          maxiter <- if (!is.null(choicees$maxiter)) choices$maxiter else 5
-          ntree <- if (!is.null(choices$ntree)) choices$ntree else 100
-        }
-        cat("Imputing missing values in Abundance data using RF method...")
-        result.npx <- t(impute_na(t(npx), method = "RF", maxiter = maxiter,
-                                  ntree = ntree, seed = seed))
-      } else if (option == 3) { 
-        cat("Imputing missing values in Abundance data using kNN method...")
-        result.npx <- t(impute_na(t(npx), method = "kNN", seed = seed))
-        
-      } else if (option == 4) {
-        if (interactive) {
-          n_pcs <- as.numeric(readline("Enter number of PCs (default = 3): "))
-          if (is.na(n_pcs)) n_pcs <- 3
-        } else {
-          n_pcs <- if (!is.null(choices$n_pcs)) choices$n_pcs else 3
-        }
-        cat("Imputing missing values in Abundance data using SVD method...")
-        result.npx <- t(impute_na(t(npx), method = "SVD",
-                                  n_pcs = n_pcs, seed = seed))
-        
-      } else if (option == 5) {
-        if (interactive) {
-          q <- as.numeric(readline("Enter q (default = 0.001): "))
-          if (is.na(q)) q <- 0.001
-        } else {
-          q <- if (!is.null(choices$q)) choices$q else 0.001
-        }
-        cat("Imputing missing values in Abundance data using minDet method...")
-        result.npx <- t(impute_na(t(npx), method = "minDet", 
-                                  q = q, seed = seed))
-        
-      } else if (option == 6) {
-        cat("Filtering out rows with NA values using complete.cases...")
-        result.npx <- npx[complete.cases(npx), ]
-        cat("After filtering, number of samples remainig:", 
-            nrow(result.npx),"\n")
-        if (!is.null(sinfo)) {
-          sinfo <- sinfo[rownames(sinfo) %in% rownames(result.npx), ,
-                         drop = FALSE]
-        }
-        
-      } else if (option == 7) {
-        cat("Imputing missing values using median imputation...")
-        imputed_matrix <- apply(as.matrix(npx), 2, impute_na_median)
-        result.npx <- as.data.frame(imputed_matrix, stringsAsFactors = FALSE)
-        rownames(result.npx) <- rownames(npx)
-        
-      } else {
-        return(list(npx =npx, sinfo = sinfo))
+    
+    if (is.na(option) || option == 0) return(list(npx = npx, sinfo = sinfo))
+    
+    if (option == 1) {
+      result.npx <- t(impute_na(t(as.matrix(npx)), seed = seed))
+    } else if (option == 2) {
+      maxiter <- if (!is.null(choices$maxiter)) choices$maxiter else 5
+      ntree   <- if (!is.null(choices$ntree)) choices$ntree else 100
+      result.npx <- t(impute_na(t(as.matrix(npx)), method = "RF",
+                                maxiter = maxiter, ntree = ntree, seed = seed))
+    } else if (option == 3) {
+      result.npx <- t(impute_na(t(as.matrix(npx)), method = "kNN", seed = seed))
+    } else if (option == 4) {
+      n_pcs <- if (!is.null(choices$n_pcs)) choices$n_pcs else 3
+      result.npx <- t(impute_na(t(as.matrix(npx)), method = "SVD",
+                                n_pcs = n_pcs, seed = seed))
+    } else if (option == 5) {
+      q <- if (!is.null(choices$q)) choices$q else 0.001
+      result.npx <- t(impute_na(t(as.matrix(npx)), method = "minDet",
+                                q = q, seed = seed))
+    } else if (option == 6) {
+      result.npx <- npx[complete.cases(npx), ]
+      if (!is.null(sinfo)) {
+        sinfo <- sinfo[rownames(sinfo) %in% rownames(result.npx), , drop = FALSE]
       }
-    # Log choices from interactive
-    if(interactive) {
+    } else if (option == 7) {
+      imputed_matrix <- apply(as.matrix(npx), 2, impute_na_median)
+      result.npx <- as.data.frame(imputed_matrix, stringsAsFactors = FALSE)
+      rownames(result.npx) <- rownames(npx)
+    } else {
+      return(list(npx = npx, sinfo = sinfo))
+    }
+    
+    # Logging for abundance
+    if (interactive) {
       new_entry <- data.frame(
         data_choice = data_choice,
-        option = option,
-        columns = I(list(NA)),
-        maxiter = if (exists("maxiter")) maxiter else NA,
-        ntree = if (exists("ntree")) ntree else NA,
-        n_pcs = if (exists("n_pcs")) n_pcs else NA,
-        q = if (exists("q")) q else NA,
+        option      = option,
+        columns     = I(list(NA)),
+        maxiter     = maxiter,
+        ntree       = ntree,
+        n_pcs       = n_pcs,
+        q           = q,
         stringsAsFactors = FALSE
       )
       NA_handling_log <<- rbind(NA_handling_log, new_entry)
-      
-      # Prompt if to save used parameters as a named object
-      logName <- readline("Enter variable name for saved parameters
-                          (or press Enter to skip): ")
-      if (nzchar(logName)) {
-        assign(logName, new_entry, envir = .GlobalEnv)
-      }
     }
+    
     return(list(npx = result.npx, sinfo = sinfo))
   }
   
-  # For Clinical Data
+  # Branch for Clinical data
   else if (!is.na(data_choice) && data_choice == 2) {
     if (is.null(sinfo)) return(list(npx = npx, sinfo = sinfo))
-  
+    
     if (interactive) {
       cat("\nAvailable columns:\n")
       for (i in seq_along(names(sinfo))) cat(i, "-", names(sinfo)[i], "\n")
-      columns_input <- readline(prompt = "Enter column numbers (comma-separated):
-                                ")
+      columns_input <- readline(prompt = "Enter column numbers (comma-separated): ")
       selected_indices <- as.integer(unlist(strsplit(columns_input, ",")))
-      } else {
-        selected_indices <- choices$columns
-        }
-    if  (interactive) {
+    } else {
+      selected_indices <- choices$columns
+    }
+    
+    if (interactive) {
       cat("\nNA Handling Options:\n")
-      cat(" 1 - minProb\n 2 - RandomForest\n 3 - kNN\n 4 - SVD\n 5 - minDet\n
-            6 - complete.cases\n 7 - median\n 0 - Cancel\n")
+      cat(" 1 - minProb\n 2 - RandomForest\n 3 - kNN\n 4 - SVD\n 5 - minDet\n 6 - complete.cases\n 7 - median\n 0 - Cancel\n")
       option <- as.numeric(readline(prompt = "Select an option: "))
     } else {
       option <- choices$option
     }
-  
+    
     if (is.na(option) || option == 0) return(list(npx = npx, sinfo = sinfo))
-  
-    # Apply chosen method
+    
     if (option == 1) {
-      cat("Imputing missing values in Clinical data using minProb method...")
-      imputed_matrix <- t(impute_na(t(as.matrix(sinfo[, selected_indices, 
-                                                      drop = FALSE])), 
-                                    seed = seed))
+      imputed_matrix <- t(impute_na(t(as.matrix(sinfo[, selected_indices, drop = FALSE])), seed = seed))
       sinfo[, selected_indices] <- as.data.frame(imputed_matrix)
     } else if (option == 2) {
-      if (interactive) {
-        maxiter <- as.numeric(readline("Enter maxiter (default = 5): "))
-        ntree <- as.numeric(readline("Enter ntree (default = 100): "))
-        if (is.na(maxiter)) maxiter <- 5
-        if (is.na(ntree)) ntree <- 100
-      } else{
-        maxiter <- if (!is.null(choicees$maxiter)) choices$maxiter else 5
-        ntree <- if (!is.null(choices$ntree)) choices$ntree else 100
-      }
-      cat("Imputing missing values in Clinical data using RF method...")
-      sinfo[, selected_indices] <- impute_na(sinfo[, selected_indices,
-                                                   drop = FALSE],
+      maxiter <- if (!is.null(choices$maxiter)) choices$maxiter else 5
+      ntree   <- if (!is.null(choices$ntree)) choices$ntree else 100
+      sinfo[, selected_indices] <- impute_na(sinfo[, selected_indices, drop = FALSE],
                                              method = "RF", maxiter = maxiter,
                                              ntree = ntree, seed = seed)
     } else if (option == 3) {
-      cat("Imputing missing values in Clinical data using kNN method...")
-      imputed_matrix <- t(impute_na(t(as.matrix(sinfo[, selected_indices, 
-                                                      drop = FALSE])), 
+      imputed_matrix <- t(impute_na(t(as.matrix(sinfo[, selected_indices, drop = FALSE])),
                                     method = "kNN", seed = seed))
       sinfo[, selected_indices] <- as.data.frame(imputed_matrix)
-    
     } else if (option == 4) {
-      if (interactive) {
-        n_pcs <- as.numeric(readline("Enter number of PCs (default = 3): "))
-        if (is.na(n_pcs)) n_pcs <- 3
-      } else {
-        n_pcs <- if (!is.null(choices$n_pcs)) choices$n_pcs else 3
-      }
-      cat("Imputing missing values in Clinical data using SVD method...")
-      imputed_matrix <- t(impute_na(t(as.matrix(sinfo[, selected_indices, 
-                                                      drop = FALSE])), 
-                                    method = "SVD", n_pcs = n_pcs, 
-                                    seed = seed))
+      n_pcs <- if (!is.null(choices$n_pcs)) choices$n_pcs else 3
+      imputed_matrix <- t(impute_na(t(as.matrix(sinfo[, selected_indices, drop = FALSE])),
+                                    method = "SVD", n_pcs = n_pcs, seed = seed))
       sinfo[, selected_indices] <- as.data.frame(imputed_matrix)
     } else if (option == 5) {
-        if (interactive) {
-          q <- as.numeric(readline("Enter q (default = 0.001): "))
-          if (is.na(q)) q <- 0.001
-        } else {
-          q <- if (!is.null(choices$q)) choices$q else 0.001
-        }
-      cat("Imputing missing values in Clinical data using minDet method...")
-      imputed_matrix <- t(impute_na(t(as.matrix(sinfo[, selected_indices, 
-                                                      drop = FALSE])), 
-                                    method = "minDet", q = q, 
-                                    seed = seed))
+      q <- if (!is.null(choices$q)) choices$q else 0.001
+      imputed_matrix <- t(impute_na(t(as.matrix(sinfo[, selected_indices, drop = FALSE])),
+                                    method = "minDet", q = q, seed = seed))
       sinfo[, selected_indices] <- as.data.frame(imputed_matrix)
-    
     } else if (option == 6) {
-      cat("Filtering out rows with NA values using complete.cases...")
       sinfo <- sinfo[complete.cases(sinfo[, selected_indices]), , drop = FALSE]
       common_samples <- intersect(rownames(sinfo), rownames(npx))
       npx <- npx[common_samples, , drop = FALSE]
       sinfo <- sinfo[common_samples, , drop = FALSE]
-      cat("After filtering, number of samples remainig:", 
-          nrow(npx),"\n")
-  
     } else if (option == 7) {
-      cat("Imputing missing values using median imputation...")
-      imputed_matrix <- apply(as.matrix(sinfo[, selected_indices, 
-                                              drop = FALSE])
-                              , 2, impute_na_median)
+      imputed_matrix <- apply(as.matrix(sinfo[, selected_indices, drop = FALSE]),
+                              2, impute_na_median)
       sinfo[, selected_indices] <- as.data.frame(imputed_matrix)
-   }
-  # Log choices from the interactive mode
-    if(interactive) {
+    }
+    
+    # Logging for clinical
+    if (interactive) {
       new_entry <- data.frame(
         data_choice = data_choice,
-        option = option,
-        columns = I(list(NA)),
-        maxiter = if (exists("maxiter")) maxiter else NA,
-        ntree = if (exists("ntree")) ntree else NA,
-        n_pcs = if (exists("n_pcs")) n_pcs else NA,
-        q = if (exists("q")) q else NA,
+        option      = option,
+        columns     = I(list(selected_indices)),
+        maxiter     = maxiter,
+        ntree       = ntree,
+        n_pcs       = n_pcs,
+        q           = q,
         stringsAsFactors = FALSE
-    )
+      )
       NA_handling_log <<- rbind(NA_handling_log, new_entry)
-  
-      # Prompt if to save used parameters as a named object
-      logName <- readline("Enter variable name for saved parameters
-                          (or press Enter to skip): ")
-      if (nzchar(logName)) {
-        assign(logName, new_entry, envir = .GlobalEnv)
-      }
     }
-    return(list(npx = npx, sinfo = sinfo))
-    }
+    
     return(list(npx = npx, sinfo = sinfo))
   }
+  
+  # Default return if no branch taken
+  return(list(npx = npx, sinfo = sinfo))
+}
