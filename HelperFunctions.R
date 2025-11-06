@@ -460,7 +460,7 @@ readline <- my_readline
 
 extract_user_inputs <- function() {
   if (!exists("user_inputs")){
-    stop("Globsal variable 'user_inputs' does not exist.")
+    stop("Global variable 'user_inputs' does not exist.")
   }
   n <- length(user_inputs)
   timestamps <- character(n)
