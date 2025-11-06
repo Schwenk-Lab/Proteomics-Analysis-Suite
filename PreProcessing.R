@@ -62,6 +62,41 @@ min_max_normalize <-function(x) {
 }
 
 ################################################################################
+# Inverse Normal Transformation:
+################################################################################
+inverse_normalize_df <- function(df, ties.method = "average") {
+  # Check that df is a dataframe
+  if (!is.data.frame(df)) {
+    stop("Input must be a dataframe.")
+  }
+  
+  # Function to transform a numeric vector using rank-based inverse normal transformation
+  inv_norm <- function(x, ties.method = "average") {
+    if (!is.numeric(x)) {
+      warning("Non-numeric column encountered; returning unchanged column.")
+      return(x)
+    }
+    
+    # Count non-missing values
+    N <- sum(!is.na(x))
+    if (N == 0) return(x)  # If all values are NA, leave the column unchanged
+    
+    # Compute ranks with NA preserved
+    r <- rank(x, na.last = "keep", ties.method = ties.method)
+    
+    # Map the scaled ranks to standard normal quantiles using qnorm
+    transformed <- qnorm((r - 0.5) / N)
+    return(transformed)
+  }
+  
+  # Apply the transformation to every column and return as a dataframe
+  transformed_df <- data.frame(lapply(df, inv_norm, ties.method = ties.method), 
+                               row.names = rownames(df))
+  assign("select.npx", transformed_df, .GlobalEnv)
+  return(transformed_df)
+}
+
+################################################################################
 # Variance filtering:
 ################################################################################
 filter_data <- function(reproduce = NULL) {
