@@ -12,7 +12,7 @@ QC_main_menu <- function() {
   # Run preliminary variable setup
   vars <- setup_variables()
   if (is.null(vars)) return(invisible(NULL))
-  npx   <- vars$npx
+  ptx   <- vars$ptx
   sinfo <- vars$sinfo
   binfo <- vars$binfo
   
@@ -33,24 +33,24 @@ QC_main_menu <- function() {
       cat("\nExiting QC workflow.\n")
       break
     } else if (qc_choice == 1) {
-      filterfbLOD(npx, sinfo, binfo, reproduce = NULL)
+      filterfbLOD(ptx, sinfo, binfo, reproduce = NULL)
     } else if (qc_choice == 2) {
       remove_technical_duplicates(reproduce = NULL)
     } else if (qc_choice == 3) {
-      remove_warning_samples(select.npx, select.sinfo)
+      remove_warning_samples(select.ptx, select.sinfo)
     } else if (qc_choice == 4) {
-      res <- handle_NAs(npx = select.npx, sinfo = select.sinfo)
-      select.npx <<- res$npx
+      res <- handle_NAs(ptx = select.ptx, sinfo = select.sinfo)
+      select.ptx <<- res$ptx
       select.sinfo <<- res$sinfo
     } else if (qc_choice == 5) {
-      olink_runner(select.npx = select.npx, select.sinfo = select.sinfo
+      olink_runner(select.ptx = select.ptx, select.sinfo = select.sinfo
                    , select.binfo = select.binfo)
     } else if (qc_choice == 6) {
-      run_pca_filtering_transposed(npx = select.npx, binfo = select.binfo,
+      run_pca_filtering_transposed(ptx = select.ptx, binfo = select.binfo,
                                    sinfo = select.sinfo)
     } else if (qc_choice == 7) {
-      res <- run_hierarchical_clustering(npx, sinfo)
-      npx   <- res$npx; sinfo <- res$sinfo;
+      res <- run_hierarchical_clustering(ptx, sinfo)
+      ptx   <- res$ptx; sinfo <- res$sinfo;
     } else if (qc_choice == 8) {
       analyze_correlation(reproduce = NULL)
     } else {
@@ -67,7 +67,7 @@ QC_main_menu <- function() {
 
 # Hierarchical Clustering for outlier identification 
 ########################################################################
-run_hierarchical_clustering_outliers <- function(npx, sinfo) {
+run_hierarchical_clustering_outliers <- function(ptx, sinfo) {
   # Interactive trait selection
   Traits4color <- choose_traits(sinfo)
   
@@ -76,7 +76,7 @@ run_hierarchical_clustering_outliers <- function(npx, sinfo) {
   temp.sinfo[Traits4color] <- lapply(temp.sinfo[Traits4color],
                                      function(x) as.numeric(as.factor(x)))
   cat("Running Hierarchical Clustering...\n")
-  htr <- hclust(dist(npx), method = "average")
+  htr <- hclust(dist(ptx), method = "average")
   tr.colors <- WGCNA::numbers2colors(temp.sinfo[, Traits4color, drop = FALSE], 
                                      signed = FALSE)
   WGCNA::plotDendroAndColors(htr, tr.colors,
@@ -93,13 +93,13 @@ run_hierarchical_clustering_outliers <- function(npx, sinfo) {
       break
       
     } else {
-      if (sample_to_remove %in% rownames(npx)) {
-        # Remove samples from local npx and sinfo
-        npx <- npx[!rownames(npx) %in% sample_to_remove, , drop = FALSE]
-        sinfo <- sinfo[!rownames(sinfo) %in% rownames(npx), , drop = FALSE]
+      if (sample_to_remove %in% rownames(ptx)) {
+        # Remove samples from local ptx and sinfo
+        ptx <- ptx[!rownames(ptx) %in% sample_to_remove, , drop = FALSE]
+        sinfo <- sinfo[!rownames(sinfo) %in% rownames(ptx), , drop = FALSE]
         
         # Update global variable
-        assign("select.npx", npx, envir = .GlobalEnv)
+        assign("select.ptx", ptx, envir = .GlobalEnv)
         assign("select.sinfo", sinfo, envir = .GlobalEnv)
         cat("\nSample", sample_to_remove, "removed successfully.\n")
       } else{
@@ -107,7 +107,7 @@ run_hierarchical_clustering_outliers <- function(npx, sinfo) {
       }
     }
   }
-  return(list(npx = npx, sinfo = sinfo))
+  return(list(ptx = ptx, sinfo = sinfo))
 }
 
 ################################################################################
@@ -117,10 +117,10 @@ run_hierarchical_clustering_outliers <- function(npx, sinfo) {
 ################################################################################ 
 # Remove samples flagged with WARNING (only CAM and IMONC):
 ################################################################################
-remove_warning_samples <- function(npx, sinfo) {
+remove_warning_samples <- function(ptx, sinfo) {
   # Check if required variables exist
-  if (!exists("select.sinfo") || !exists("select.npx")) {
-    cat("ERROR: Either 'select.sinfo' or 'select.npx' was not found in workspace\n")
+  if (!exists("select.sinfo") || !exists("select.ptx")) {
+    cat("ERROR: Either 'select.sinfo' or 'select.ptx' was not found in workspace\n")
     return(invisible(NULL))
   }
   
@@ -139,31 +139,31 @@ remove_warning_samples <- function(npx, sinfo) {
         paste(warning_samples, collapse = ", "), "\n")
   } else { 
     cat("No samples with 'Warning' found. No changes made.\n")
-    return(list(sinfo = select.sinfo, npx = select.npx))
+    return(list(sinfo = select.sinfo, ptx = select.ptx))
   }
   # Remove identified Warning samples
   new_sinfo <- select.sinfo[!rownames(select.sinfo) %in% warning_samples, , drop = FALSE]
-  new_npx <- select.npx[!rownames(select.npx) %in% warning_samples, , drop = FALSE]
+  new_ptx <- select.ptx[!rownames(select.ptx) %in% warning_samples, , drop = FALSE]
   
-  cat("After removal, select.sinfo has", nrow(new_sinfo), "samples and select.npx has",
-      nrow(new_npx), "samples\n")
+  cat("After removal, select.sinfo has", nrow(new_sinfo), "samples and select.ptx has",
+      nrow(new_ptx), "samples\n")
   
   # Update global variables
   assign("select.sinfo", new_sinfo, envir = .GlobalEnv)
-  assign("select.npx", new_npx, envir = .GlobalEnv)
+  assign("select.ptx", new_ptx, envir = .GlobalEnv)
   
-  return(list(sinfo = new_sinfo, npx = new_npx))
+  return(list(sinfo = new_sinfo, ptx = new_ptx))
 }
 
 ################################################################################ 
 # Removal of duplicate samples
 ################################################################################ 
-remove_technical_duplicates <- function(sinfo, npx, reproduce = NULL) {
+remove_technical_duplicates <- function(sinfo, ptx, reproduce = NULL) {
   # Check that required dataframes exist in global environment
   if (!exists("select.sinfo", envir = .GlobalEnv))
     stop("Global object 'select.sinfo' not found")
-  if (!exists("select.npx", envir = .GlobalEnv))
-    stop("Global object 'select.npx' not found")
+  if (!exists("select.ptx", envir = .GlobalEnv))
+    stop("Global object 'select.ptx' not found")
     
   duplicates <- select.sinfo %>%
     group_by(individual_id) %>%
@@ -208,7 +208,7 @@ remove_technical_duplicates <- function(sinfo, npx, reproduce = NULL) {
       duplicates <- duplicates[duplicates$primary_blood_draw == pbdrw, ]
       cat("Removing", nrow(duplicates), "samples based on primary_blood_draw.\n")
       select.sinfo <<- select.sinfo[!rownames(select.sinfo) %in% rownames(duplicates), ]
-      select.npx <<- select.npx[rownames(select.npx) %in% rownames(select.sinfo), ]
+      select.ptx <<- select.ptx[rownames(select.ptx) %in% rownames(select.sinfo), ]
       reproduce$option <- "primary_blood_draw"
       reproduce$pbdrw <- pbdrw
       
@@ -242,7 +242,7 @@ remove_technical_duplicates <- function(sinfo, npx, reproduce = NULL) {
       duplicates_to_remove <- duplicates[rownames(duplicates) %in% ids_to_remove, ]
       cat("Removing", nrow(duplicates_to_remove), "samples based on freq_below_lod.\n")
       select.sinfo <- select.sinfo[rownames(select.sinfo) %in% rownames(duplicates_to_remove), ]
-      select.npx <- select.npx[rownames(select.npx) %in% rownames(select.sinfo), ]
+      select.ptx <- select.ptx[rownames(select.ptx) %in% rownames(select.sinfo), ]
       reproduce$option <- "freq_below_lod"
       reproduce$fblChoice <- removal_choice
     } else { 
@@ -256,7 +256,7 @@ remove_technical_duplicates <- function(sinfo, npx, reproduce = NULL) {
       pbdrw <- reproduce$pbdrw
       duplicates <- duplicates[duplicates$primary_blood_draw == pbdrw, ]
       select.sinfo <<- select.sinfo[!rownames(select.sinfo) %in% rownames(duplicates), ]
-      select.npx <<- select.npx[rownames(select.npx) %in% rownames(select.sinfo), ]
+      select.ptx <<- select.ptx[rownames(select.ptx) %in% rownames(select.sinfo), ]
     } else if (reproduce$option == "freq_below_lod") {
       removal_choice <- reproduce$fblChoice
       ids_to_remove <- c()
@@ -274,18 +274,18 @@ remove_technical_duplicates <- function(sinfo, npx, reproduce = NULL) {
       }
       duplicates_to_remove <- duplicates[rownames(duplicates) %in% ids_to_remove, ]
       select.sinfo <- select.sinfo[!rownames(select.sinfo) %in% rownames(duplicates_to_remove), ]
-      select.npx <- select.npx[rownames(select.npx) %in% rownames(select.sinfo), ]
+      select.ptx <- select.ptx[rownames(select.ptx) %in% rownames(select.sinfo), ]
       
     }
   }
-  assign("select.npx", select.npx, envir = .GlobalEnv)
+  assign("select.ptx", select.ptx, envir = .GlobalEnv)
   assign("select.sinfo", select.sinfo, envir = .GlobalEnv)
 }
 
 ################################################################################  
 # PCA filtering of protein outliers
 ################################################################################ 
-run_pca_filtering_proteins <- function(npx, sinfo, binfo, reproduce = NULL) {
+run_pca_filtering_proteins <- function(ptx, sinfo, binfo, reproduce = NULL) {
   if (is.null(reproduce)) {
     reproduce <- data.frame(
       SD = NA,
@@ -296,9 +296,9 @@ run_pca_filtering_proteins <- function(npx, sinfo, binfo, reproduce = NULL) {
       stringsAsFactors = FALSE
     )
   }
-  npx_trans <- t(npx)
-  pca <- prcomp(as.data.frame(npx_trans), scale = TRUE)
-  pcaX <- as.data.frame(pca$x, row.names = rownames(npx_trans))
+  ptx_trans <- t(ptx)
+  pca <- prcomp(as.data.frame(ptx_trans), scale = TRUE)
+  pcaX <- as.data.frame(pca$x, row.names = rownames(ptx_trans))
   pca.var <- pca$sdev^2
   pca.var.percent <- round((pca.var / sum(pca.var)) * 100, 2)
   
@@ -377,8 +377,8 @@ run_pca_filtering_proteins <- function(npx, sinfo, binfo, reproduce = NULL) {
       filtered_indices <- which(pcaX$PC1 >= pc1_min & pcaX$PC1 <= pc1_max &
                                   pcaX$PC2 >= pc2_min & pcaX$PC2 <= pc2_max)
       if (lenght(filterd_indices) > 0) {
-        npx_trans <- npx_trans[filtered_indices, , drop = FALSE]
-        cat("Filtering applied. Remaining number of proteins: ", nrow(npx_trans), "\n")
+        ptx_trans <- ptx_trans[filtered_indices, , drop = FALSE]
+        cat("Filtering applied. Remaining number of proteins: ", nrow(ptx_trans), "\n")
       }
       else {
         cat("Warning: No proteins met the cutoff criteria. No changes made. \n")
@@ -387,8 +387,8 @@ run_pca_filtering_proteins <- function(npx, sinfo, binfo, reproduce = NULL) {
       filtering_active <- FALSE
     }
     cat("Transposing matrix back to original state...\n")
-    npx <- as.dataframe(t(npx_trans))
-    rownames(npx) <- rownames(select.sinfo)
+    ptx <- as.dataframe(t(ptx_trans))
+    rownames(ptx) <- rownames(select.sinfo)
     
   } else {
     # compute gridline positions
@@ -411,24 +411,24 @@ run_pca_filtering_proteins <- function(npx, sinfo, binfo, reproduce = NULL) {
     pc2_max <- reproduce$PC2hi
     filtered_indices <- which(pcaX$PC1 >= pc1_min & pcaX$PC1 <= pc1_max &
                                 pcaX$PC2 >= pc2_min & pcaX$PC2 <= pc2_max)
-    npx_trans <- npx_trans[filtered_indices, , drop = FALSE]
-    npx <- as.dataframe(t(npx_trans))
-    rownames(npx) <- rownames(select.sinfo)
+    ptx_trans <- ptx_trans[filtered_indices, , drop = FALSE]
+    ptx <- as.dataframe(t(ptx_trans))
+    rownames(ptx) <- rownames(select.sinfo)
   }
-  # Update binfo and assign npx and binfo to global environment
-  select.binfo <<- select.binfo[select.binfo$protein_name %in% colnames(npx), ,
+  # Update binfo and assign ptx and binfo to global environment
+  select.binfo <<- select.binfo[select.binfo$protein_name %in% colnames(ptx), ,
                                 drop = FALSE]
-  assign("select.npx", npx, envir = .GlobalEnv)
+  assign("select.ptx", ptx, envir = .GlobalEnv)
   assign("select.binfo", select.binfo, .GlobalEnv)
   assign("reproducePCAproteinFilter", reproduce, envir = .GlobalEnv)
   
-  return(list(npx = npx, sinfo = sinfo, binfo = binfo))
+  return(list(ptx = ptx, sinfo = sinfo, binfo = binfo))
 }
 
 ################################################################################ 
 # Filter proteins based on frequency below LOD
 ################################################################################ 
-filterfbLOD <- function(npx, sinfo, binfo, reproduce = NULL) {
+filterfbLOD <- function(ptx, sinfo, binfo, reproduce = NULL) {
   if (is.null(reproduce)) {
     reproduce <- data.frame(
       cutoff = NA,
@@ -446,8 +446,8 @@ filterfbLOD <- function(npx, sinfo, binfo, reproduce = NULL) {
     cat("\n", length(selected_proteins), "proteins found with freq_below_lod above the cutoff.\n")
     if (length(selected_proteins) > 0) {
       binfo <- binfo[!(binfo$protein_name %in% selected_proteins), ]
-      npx <- npx[, !(colnames(npx) %in% selected_proteins), drop = FALSE]
-      cat("Proteins removed from binfo and npx based on the cutoff.\n")
+      ptx <- ptx[, !(colnames(ptx) %in% selected_proteins), drop = FALSE]
+      cat("Proteins removed from binfo and ptx based on the cutoff.\n")
     } else {
       cat("No proteins were removed based on the cutoff.\n")
     } 
@@ -456,7 +456,7 @@ filterfbLOD <- function(npx, sinfo, binfo, reproduce = NULL) {
     cutoff <- reproduce$cutoff
     selected_proteins <- binfo$protein_name[binfo$freq_below_lod > cutoff]
     binfo <- binfo[!(binfo$protein_name %in% selected_proteins), ]
-    npx <- npx[, !(colnames(npx) %in% selected_proteins), drop = FALSE]
+    ptx <- ptx[, !(colnames(ptx) %in% selected_proteins), drop = FALSE]
   }
 }
 
@@ -482,11 +482,11 @@ analyze_correlation <- function(reproduce = NULL) {
     
     if (corr_choice == 1) {
       cat("\nCalculating correlation matrix for proteins...\n")
-      cor_mat <- cor(select.npx, use = "pairwise.complete.obs")
+      cor_mat <- cor(select.ptx, use = "pairwise.complete.obs")
       
     } else if (corr_choice == 2) {
       cat("\nCalculating correlation matrix for samples...\n")
-      cor_mat <- cor(t(select.npx), use = "pairwise.complete.obs")
+      cor_mat <- cor(t(select.ptx), use = "pairwise.complete.obs")
       
     } else {
       cat("\nInvalid correlation choice. Skipping correlation analysis.\n")
@@ -503,11 +503,11 @@ analyze_correlation <- function(reproduce = NULL) {
     fontsize <- reproduce$fontSize
     if (corr_choice == 1) {
       cat("\nCalculating correlation matrix for proteins...\n")
-      cor_mat <- cor(select.npx, use = "pairwise.complete.obs")
+      cor_mat <- cor(select.ptx, use = "pairwise.complete.obs")
       
     } else if (corr_choice == 2) {
       cat("\nCalculating correlation matrix for samples...\n")
-      cor_mat <- cor(t(select.npx), use = "pairwise.complete.obs")
+      cor_mat <- cor(t(select.ptx), use = "pairwise.complete.obs")
       
     } else {
       cat("\nInvalid correlation choice. Skipping correlation analysis.\n")
@@ -567,7 +567,7 @@ analyze_correlation <- function(reproduce = NULL) {
 # Functions using OlinkAnalyze
 ################################################################################
 # Runner function
-olink_runner <- function(select.npx = NULL,
+olink_runner <- function(select.ptx = NULL,
                          select.sinfo = NULL,
                          select.binfo = NULL,
                          olink_data = NULL,
@@ -578,7 +578,7 @@ olink_runner <- function(select.npx = NULL,
     cat("1: Create Olink Format\n")
     cat("2: Olink PCA Plot\n")
     cat("3: Olink QC Plot\n")
-    cat("4: Olink NPX Distribution\n")
+    cat("4: Olink ptx Distribution\n")
     cat("5: Remove Outliers\n")
     cat("6: Convert back to Wide Format (Optional)\n")
     cat("7: Exit\n")
@@ -594,10 +594,10 @@ olink_runner <- function(select.npx = NULL,
       cat("Exiting the Olink Runner. Goodbye!\n")
       break
     } else if (option == 1) {
-      if (is.null(select.npx) || is.null(select.sinfo) || is.null(select.binfo)) {
-        cat("For option 1, please provide select.npx, select.sinfo, and select.binfo.\n")
+      if (is.null(select.ptx) || is.null(select.sinfo) || is.null(select.binfo)) {
+        cat("For option 1, please provide select.ptx, select.sinfo, and select.binfo.\n")
       } else {
-        result <- convert_to_olink_long(select.npx, select.sinfo, select.binfo, ensure_unique_ids)
+        result <- convert_to_olink_long(select.ptx, select.sinfo, select.binfo, ensure_unique_ids)
         olink_data <- result  # update olink_data for subsequent operations
         cat("Olink Format created successfully.\n")
         print(result)
@@ -623,10 +623,10 @@ olink_runner <- function(select.npx = NULL,
       
     } else if (option == 4) {
       if (is.null(olink_data)) {
-        cat("For option 4 (NPX Distribution), please run 'Create Olink Format'.\n")
+        cat("For option 4 (ptx Distribution), please run 'Create Olink Format'.\n")
       } else {
-        result <- olink_npx_distribution(olink_data)
-        cat("NPX Distribution function executed.\n")
+        result <- olink_ptx_distribution(olink_data)
+        cat("ptx Distribution function executed.\n")
         print(result)
       }
       
@@ -660,21 +660,21 @@ olink_runner <- function(select.npx = NULL,
 ################################################################################ 
 # Convert to Long format
 ################################################################################ 
-convert_to_olink_long <- function(select.npx, select.sinfo, select.binfo, 
+convert_to_olink_long <- function(select.ptx, select.sinfo, select.binfo, 
                                   ensure_unique_ids = FALSE) {
   
   #########################################################
-  # Prepare and Pivot NPX Data (Wide to Long Format)
+  # Prepare and Pivot ptx Data (Wide to Long Format)
   #########################################################
-  if (!"sample_id" %in% colnames(select.npx)) {
-    select.npx <- select.npx %>% tibble::rownames_to_column("sample_id")
+  if (!"sample_id" %in% colnames(select.ptx)) {
+    select.ptx <- select.ptx %>% tibble::rownames_to_column("sample_id")
   }
   
-  npx_long <- select.npx %>%
+  ptx_long <- select.ptx %>%
     tidyr::pivot_longer(
       cols = -sample_id,
       names_to = "protein_name",
-      values_to = "NPX"
+      values_to = "ptx"
     )
   
   #########################################################
@@ -684,7 +684,7 @@ convert_to_olink_long <- function(select.npx, select.sinfo, select.binfo,
     select.sinfo <- select.sinfo %>% tibble::rownames_to_column("sample_id")
   }
   
-  merged_data <- npx_long %>%
+  merged_data <- ptx_long %>%
     dplyr::left_join(select.sinfo, by = "sample_id")
   
   #########################################################
@@ -1024,21 +1024,21 @@ remove_outliers_interactive <- function(olink_long_data,
   # Determine which samples to remove based on the choice
   if (removal_choice == 1) {
     samples_to_remove <<- all_outliers %>% dplyr::filter(occurrences == 3) %>% dplyr::pull(SampleID)
-    select.npx <<- select.npx[!rownames(select.npx) %in% samples_to_remove,]
-    select.sinfo <<- select.sinfo[rownames(select.sinfo) %in% rownames(select.npx), , drop = FALSE]
+    select.ptx <<- select.ptx[!rownames(select.ptx) %in% samples_to_remove,]
+    select.sinfo <<- select.sinfo[rownames(select.sinfo) %in% rownames(select.ptx), , drop = FALSE]
   } else if (removal_choice == 2) {
     samples_to_remove <<- all_outliers %>% dplyr::filter(occurrences >= 2) %>% dplyr::pull(SampleID)
-    select.npx <<- select.npx[!rownames(select.npx) %in% samples_to_remove,]
-    select.sinfo <<- select.sinfo[rownames(select.sinfo) %in% rownames(select.npx), , drop = FALSE]
+    select.ptx <<- select.ptx[!rownames(select.ptx) %in% samples_to_remove,]
+    select.sinfo <<- select.sinfo[rownames(select.sinfo) %in% rownames(select.ptx), , drop = FALSE]
   } else if (removal_choice == 3) {
     samples_to_remove <<- all_outliers %>% dplyr::filter(occurrences >= 1) %>% dplyr::pull(SampleID)
-    select.npx <<- select.npx[!rownames(select.npx) %in% samples_to_remove,]
-    select.sinfo <<- select.sinfo[rownames(select.sinfo) %in% rownames(select.npx), , drop = FALSE]
+    select.ptx <<- select.ptx[!rownames(select.ptx) %in% samples_to_remove,]
+    select.sinfo <<- select.sinfo[rownames(select.sinfo) %in% rownames(select.ptx), , drop = FALSE]
   } else if (removal_choice == 4) {
     manual_input <- readline(prompt = "Enter SampleIDs to remove (comma-separated): ")
     samples_to_remove <<- unlist(strsplit(manual_input, split = ",\\s*"))
-    select.npx <<- select.npx[!rownames(select.npx) %in% samples_to_remove,]
-    select.sinfo <<- select.sinfo[rownames(select.sinfo) %in% rownames(select.npx), , drop = FALSE]
+    select.ptx <<- select.ptx[!rownames(select.ptx) %in% samples_to_remove,]
+    select.sinfo <<- select.sinfo[rownames(select.sinfo) %in% rownames(select.ptx), , drop = FALSE]
   } else if (removal_choice == 5) {
     cat("Returning to Main Menu without removing samples.\n")
     return(NULL)
@@ -1062,30 +1062,30 @@ remove_outliers_interactive <- function(olink_long_data,
   ))
 }
 ################################################################################ 
-# Olink NPX distribution plots
+# Olink ptx distribution plots
 ################################################################################
-olink_npx_distribution <- function(olink_data) {
+olink_ptx_distribution <- function(olink_data) {
   # Check that data is provided
   if (is.null(olink_data)) {
     stop("Please provide the Olink long-format data (olink_data).")
   }
   
   # Prompt if to adjust data by Sample Median?
-  adjust_choice <- tolower(readline(prompt = "Do you want to adjust NPX by sample median? (y/n): "))
+  adjust_choice <- tolower(readline(prompt = "Do you want to adjust ptx by sample median? (y/n): "))
   if (adjust_choice == "y") {
-    # Calculate the median NPX for each SampleID
-    median_NPX <- olink_data %>%
+    # Calculate the median ptx for each SampleID
+    median_ptx <- olink_data %>%
       dplyr::group_by(SampleID) %>%
-      dplyr::summarise(Median_NPX = median(NPX, na.rm = TRUE), .groups = "drop")
+      dplyr::summarise(Median_ptx = median(ptx, na.rm = TRUE), .groups = "drop")
     
-    # Adjust NPX by subtracting the sample median
+    # Adjust ptx by subtracting the sample median
     olink_data <- olink_data %>%
-      dplyr::inner_join(median_NPX, by = "SampleID") %>%
-      dplyr::mutate(NPX = NPX - Median_NPX)
+      dplyr::inner_join(median_ptx, by = "SampleID") %>%
+      dplyr::mutate(ptx = ptx - Median_ptx)
     
-    cat("Data has been adjusted by subtracting the sample median from NPX values.\n")
+    cat("Data has been adjusted by subtracting the sample median from ptx values.\n")
   } else {
-    cat("Using original NPX data.\n")
+    cat("Using original ptx data.\n")
   }
   
   # Choose a Variable for Coloring the Plot
@@ -1155,15 +1155,15 @@ olink_npx_distribution <- function(olink_data) {
 ################################################################################ 
 reverse_convert_to_olink_long <- function(olink_long_data) {
   
-  # Reconstruct NPX data in wide format
-  cleaned.npx <<- olink_long_data %>%
-    dplyr::select(dplyr::all_of(c("SampleID", "Assay", "NPX"))) %>%
-    pivot_wider(names_from = Assay, values_from = NPX)
+  # Reconstruct ptx data in wide format
+  cleaned.ptx <<- olink_long_data %>%
+    dplyr::select(dplyr::all_of(c("SampleID", "Assay", "ptx"))) %>%
+    pivot_wider(names_from = Assay, values_from = ptx)
   
   # Extract sample (clinical) information from sinfo
   cleaned.sinfo <<- olink_long_data %>%
     dplyr::distinct(SampleID, .keep_all = TRUE) %>%
-    dplyr::select(-dplyr::all_of(c("Assay", "NPX", "UniProt", "OlinkID",
+    dplyr::select(-dplyr::all_of(c("Assay", "ptx", "UniProt", "OlinkID",
                                    "Panel", "Panel_Version", "Normalisation",
                                    "LOD", "MissingFreq", "Index")))
   
@@ -1174,9 +1174,7 @@ reverse_convert_to_olink_long <- function(olink_long_data) {
     dplyr::select(dplyr::all_of(c("Assay", "UniProt", "OlinkID", "Panel",
                                   "Panel_Version", "Normalisation", "LOD", "MissingFreq")))
   
-  return(list(cleaned.npx = cleaned.npx,
+  return(list(cleaned.ptx = cleaned.ptx,
               cleaned.sinfo = cleaned.sinfo,
               cleaned.binfo = cleaned.binfo))
 }
-
-
