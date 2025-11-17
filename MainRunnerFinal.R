@@ -10,7 +10,7 @@
 # Main Runner Function
 ################################################################################
 
-run_main_menu <- function(sinfo, binfo, npx) {
+run_main_menu <- function(sinfo, binfo, ptx) {
   # Log start time
   start_time <- Sys.time()
   
@@ -33,7 +33,7 @@ run_main_menu <- function(sinfo, binfo, npx) {
     choice <- my_readline("Enter your choice [0-7]: ")
     
     if (choice == "1"){
-      process_data(sinfo, binfo, npx)
+      process_data(sinfo, binfo, ptx)
     } else if (choice == "2"){
       set_global_seed()
     } else if (choice == "3"){
@@ -65,3 +65,4 @@ run_main_menu <- function(sinfo, binfo, npx) {
   # Return a list with results if needed for later use
   invisible(list(total_runtime = total_time, inputs = user_inputs))
 }
+
