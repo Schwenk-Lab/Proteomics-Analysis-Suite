@@ -99,28 +99,28 @@ visualizationRunner <- function(reproduce = NULL) {
 
 visualizePCA <- function() {
   # Check that the DR result exists.
-  if (!exists("select.npx") || is.null(select.npx)) {
-    cat("\nError: 'select.npx' is not available. Ensure data is loaded before PCA.\n")
+  if (!exists("select.ptx") || is.null(select.ptx)) {
+    cat("\nError: 'select.ptx' is not available. Ensure data is loaded before PCA.\n")
     return(invisible(NULL))
   }
   
   cat("\nPerforming PCA visualization...\n")
   
-  # If unreduced.npx exists, but the select.npx is same as unreduced.npx, rerun PCA
+  # If unreduced.ptx exists, but the select.ptx is same as unreduced.ptx, rerun PCA
   run_pca <- FALSE
-  if (exists("unreduced.npx") && !is.null(unreduced.npx)) {
-    if (identical(colnames(select.npx), colnames(unreduced.npx))) {
+  if (exists("unreduced.ptx") && !is.null(unreduced.ptx)) {
+    if (identical(colnames(select.ptx), colnames(unreduced.ptx))) {
       run_pca <- TRUE
     }
   }
   
   if (run_pca) {
     # Re-run PCA without centering or scaling
-    pca_result <- prcomp(select.npx, center = FALSE, scale. = FALSE)
+    pca_result <- prcomp(select.ptx, center = FALSE, scale. = FALSE)
     df_plot <- data.frame(PC1 = pca_result$x[, 1], PC2 = pca_result$x[, 2])
   } else {
-    # Use the first two columns from select.npx corresponding to PC1 and PC2
-    df_plot <- as.data.frame(select.npx[, 1:2, drop = FALSE])
+    # Use the first two columns from select.ptx corresponding to PC1 and PC2
+    df_plot <- as.data.frame(select.ptx[, 1:2, drop = FALSE])
   }
   
   # Determine axis labels.
@@ -171,11 +171,11 @@ visualizePCA <- function() {
 visualizeSparsePCA <- function() {
   cat("\nPerforming Sparse PCA visualization...\n")
   
-  # If unreduced.npx and saved parameters from SPCA exists, 
-  # but the select.npx is same as unreduced.npx, rerun SPCA with saved parameters
+  # If unreduced.ptx and saved parameters from SPCA exists, 
+  # but the select.ptx is same as unreduced.ptx, rerun SPCA with saved parameters
   run_spca <- FALSE
-  if (exists("unreduced.npx") && !is.null(unreduced.npx)) {
-    if (identical(colnames(select.npx), colnames(unreduced.npx))) {
+  if (exists("unreduced.ptx") && !is.null(unreduced.ptx)) {
+    if (identical(colnames(select.ptx), colnames(unreduced.ptx))) {
       run_spca <- TRUE
     }
   }
@@ -185,7 +185,7 @@ visualizeSparsePCA <- function() {
       cat("Missing required global parameters (ncomp_input, keepX_vals). Cannot re-run SPCA.\n")
       return(invisible(NULL))
     }
-    spca_result <- mixOmics::spca(select.npx,
+    spca_result <- mixOmics::spca(select.ptx,
                                   ncomp = ncomp_input,
                                   keepX = keepX_vals,
                                   center = FALSE,
@@ -193,8 +193,8 @@ visualizeSparsePCA <- function() {
     df_plot <- data.frame(SPCA1 = spca_result$x[, 1],
                           SPCA2 = spca_result$x[, 2])
   } else {
-    # Use the first two columns from select.npx (SPCA1 and SPCA2)
-    df_plot <- as.data.frame(select.npx[, 1:2, drop = FALSE])
+    # Use the first two columns from select.ptx (SPCA1 and SPCA2)
+    df_plot <- as.data.frame(select.ptx[, 1:2, drop = FALSE])
     colnames(df_plot)[1:2] <- c("SPCA1", "SPCA2")
   }
   
@@ -256,8 +256,8 @@ visualizePLSDA <- function(reproduce = NULL) {
   
   # Determine whether to re-run PLS-DA using the original data.
   run_plsda <- FALSE
-  if (exists("unreduced.npx") && !is.null(unreduced.npx)) {
-    if (identical(colnames(select.npx), colnames(unreduced.npx))) {
+  if (exists("unreduced.ptx") && !is.null(unreduced.ptx)) {
+    if (identical(colnames(select.ptx), colnames(unreduced.ptx))) {
       run_plsda <- TRUE
     }
   }
@@ -279,7 +279,7 @@ visualizePLSDA <- function(reproduce = NULL) {
     }
     
     # Run PLS-DA with options as needed.
-    plsda_model <- mixOmics::plsda(select.npx, temp.plsda.sinfo, ncomp = ncomp_input)
+    plsda_model <- mixOmics::plsda(select.ptx, temp.plsda.sinfo, ncomp = ncomp_input)
     pls_scores_full <- plsda_model$variates$X[, 1:ncomp_input, drop = FALSE]
     
     if (plotDim == 2) {
@@ -292,16 +292,16 @@ visualizePLSDA <- function(reproduce = NULL) {
     }
     
   } else {
-    # Without re-running PLS-DA, use the components from select.npx.
+    # Without re-running PLS-DA, use the components from select.ptx.
     if (plotDim == 2) {
-      df_plot <- as.data.frame(select.npx[, 1:2, drop = FALSE])
+      df_plot <- as.data.frame(select.ptx[, 1:2, drop = FALSE])
       colnames(df_plot)[1:2] <- c("Comp1", "Comp2")
     } else {  # If 3D plot
-      if (ncol(select.npx) < 3) {
-        cat("Error: 'select.npx' does not have three columns required for a 3D plot.\n")
+      if (ncol(select.ptx) < 3) {
+        cat("Error: 'select.ptx' does not have three columns required for a 3D plot.\n")
         return(invisible(NULL))
       }
-      df_plot <- as.data.frame(select.npx[, 1:3, drop = FALSE])
+      df_plot <- as.data.frame(select.ptx[, 1:3, drop = FALSE])
       colnames(df_plot)[1:3] <- c("Comp1", "Comp2", "Comp3")
     }
   }
@@ -388,13 +388,13 @@ visualizeSPLSDA <- function() {
   
   # Determine whether to re-run sPLS-DA by comparing column names.
   run_splsda <- FALSE
-  if (exists("unreduced.npx") && !is.null(unreduced.npx)) {
-    if (identical(colnames(select.npx), colnames(unreduced.npx))) {
+  if (exists("unreduced.ptx") && !is.null(unreduced.ptx)) {
+    if (identical(colnames(select.ptx), colnames(unreduced.ptx))) {
       run_splsda <- TRUE
     }
   }
   # Reproduce from previously stored parameters if 
-  # select.npx has been changed by another DR method
+  # select.ptx has been changed by another DR method
   if (run_splsda) {
     # Check required global parameters.
     if (!exists("splsda.ncomp") || !exists("splsda.keepX") || !exists("temp.splsda.sinfo")) {
@@ -404,7 +404,7 @@ visualizeSPLSDA <- function() {
     # Run sPLS-DA
     ncomp_input <- splsda.ncomp
     keepX <- splsda.keepX
-    splsda_model <- mixOmics::splsda(select.npx, temp.splsda.sinfo, 
+    splsda_model <- mixOmics::splsda(select.ptx, temp.splsda.sinfo, 
                                      ncomp = ncomp_input, keepX = keepX_vals)
     spls_scores_full <- splsda_model$variates$X[, 1:ncomp_input, drop = FALSE]
     if (ncol(spls_scores_full) < 2) {
@@ -414,8 +414,8 @@ visualizeSPLSDA <- function() {
     df_plot <- data.frame(Comp1 = spls_scores_full[, 1], 
                           Comp2 = spls_scores_full[, 2])
   } else {
-    # Use the first two columns of select.npx.
-    df_plot <- as.data.frame(select.npx[, 1:2, drop = FALSE])
+    # Use the first two columns of select.ptx.
+    df_plot <- as.data.frame(select.ptx[, 1:2, drop = FALSE])
     colnames(df_plot)[1:2] <- c("Comp1", "Comp2")
   }
   
@@ -458,8 +458,8 @@ visualizeKernelPCA <- function() {
   cat("\nPerforming Kernel PCA visualization...\n")
   # Determine whether to run kernel PCA based on matching column names.
   run_kpca <- FALSE
-  if (exists("unreduced.npx") && !is.null(unreduced.npx)) {
-    if (identical(colnames(select.npx), colnames(unreduced.npx))) {
+  if (exists("unreduced.ptx") && !is.null(unreduced.ptx)) {
+    if (identical(colnames(select.ptx), colnames(unreduced.ptx))) {
       run_kpca <- TRUE
     }
   }
@@ -473,7 +473,7 @@ visualizeKernelPCA <- function() {
     sigmaX <- reproduceKernelPCA$KPCAsigmaX
     features <- reproduceKernelPCA$KPCAnFeatures
     # Run kernel PCA using an RBF kernel.
-    kpca_result <- kernlab::kpca(as.matrix(select.npx),
+    kpca_result <- kernlab::kpca(as.matrix(select.ptx),
                                  kernel = "rbfdot",
                                  kpar = list(sigma = sigmaX),
                                  features = features)
@@ -486,8 +486,8 @@ visualizeKernelPCA <- function() {
     df_dr <- data.frame(PC1 = pc_coords[, 1],
                         PC2 = pc_coords[, 2])
   } else {
-    # Fallback: Use the first two columns of select.npx.
-    df_dr <- as.data.frame(select.npx[, 1:2, drop = FALSE])
+    # Fallback: Use the first two columns of select.ptx.
+    df_dr <- as.data.frame(select.ptx[, 1:2, drop = FALSE])
     colnames(df_dr)[1:2] <- c("PC1", "PC2")
   }
   
@@ -523,8 +523,8 @@ visualizeKernelPCA <- function() {
 ################################################################################ 
 visualizeUMAP <- function(reproduce = NULL) {
   # Check that the dimensionality reduction (DR) result exists.
-  if (!exists("select.npx") || is.null(select.npx)) {
-    cat("\nError: 'select.npx' is not available. Ensure data is loaded before running UMAP.\n")
+  if (!exists("select.ptx") || is.null(select.ptx)) {
+    cat("\nError: 'select.ptx' is not available. Ensure data is loaded before running UMAP.\n")
     return(invisible(NULL))
   }
   if (is.na(reproduce$plotDim)) {
@@ -544,8 +544,8 @@ visualizeUMAP <- function(reproduce = NULL) {
  
   # Determine whether to run UMAP based on matching column names.
   run_umap <- FALSE
-  if (exists("unreduced.npx") && !is.null(unreduced.npx)) {
-    if (identical(colnames(select.npx), colnames(unreduced.npx))) {
+  if (exists("unreduced.ptx") && !is.null(unreduced.ptx)) {
+    if (identical(colnames(select.ptx), colnames(unreduced.ptx))) {
       run_umap <- TRUE
     }
   }
@@ -562,7 +562,7 @@ visualizeUMAP <- function(reproduce = NULL) {
     seed_val = reproduceUMAP$seed
     
     # Run UMAP with the specified parameters.
-    umap_result <- uwot::umap(as.matrix(select.npx),
+    umap_result <- uwot::umap(as.matrix(select.ptx),
                               n_components = ncomp,
                               n_neighbors = n_neighbors,
                               min_dist = min_dist,
@@ -584,20 +584,20 @@ visualizeUMAP <- function(reproduce = NULL) {
     }
     
   } else {
-    # Fallback: Use the first 2 or 3 columns of select.npx.
+    # Fallback: Use the first 2 or 3 columns of select.ptx.
     if (umapDim == 2) {
-      if (ncol(select.npx) < 2) {
-        cat("Error: 'select.npx' does not have two columns required for a 2D plot.\n")
+      if (ncol(select.ptx) < 2) {
+        cat("Error: 'select.ptx' does not have two columns required for a 2D plot.\n")
         return(invisible(NULL))
       }
-      df_umap <- as.data.frame(select.npx[, 1:2, drop = FALSE])
+      df_umap <- as.data.frame(select.ptx[, 1:2, drop = FALSE])
       colnames(df_umap)[1:2] <- c("UMAP1", "UMAP2")
     } else {
-      if (ncol(select.npx) < 3) {
-        cat("Error: 'select.npx' does not have three columns required for a 3D plot.\n")
+      if (ncol(select.ptx) < 3) {
+        cat("Error: 'select.ptx' does not have three columns required for a 3D plot.\n")
         return(invisible(NULL))
       }
-      df_umap <- as.data.frame(select.npx[, 1:3, drop = FALSE])
+      df_umap <- as.data.frame(select.ptx[, 1:3, drop = FALSE])
       colnames(df_umap)[1:3] <- c("UMAP1", "UMAP2", "UMAP3")
     }
   }
@@ -670,17 +670,17 @@ visualizeUMAP <- function(reproduce = NULL) {
 
 visualizeTSNE <- function() {
   # Check that the DR result exists
-  if (!exists("select.npx") || is.null(select.npx)) {
-    cat("\nError: 'select.npx' is not available. Ensure data is loaded before running t-SNE.\n")
+  if (!exists("select.ptx") || is.null(select.ptx)) {
+    cat("\nError: 'select.ptx' is not available. Ensure data is loaded before running t-SNE.\n")
     return(invisible(NULL))
   }
   
   cat("\nPerforming t-SNE visualization...\n")
   
-  # If unreduced.npx exists, but the select.npx is same as unreduced.npx, rerun t-SNE
+  # If unreduced.ptx exists, but the select.ptx is same as unreduced.ptx, rerun t-SNE
   run_tsne <- FALSE
-  if (exists("unreduced.npx") && !is.null(unreduced.npx)) {
-    if (identical(colnames(select.npx), colnames(unreduced.npx))) {
+  if (exists("unreduced.ptx") && !is.null(unreduced.ptx)) {
+    if (identical(colnames(select.ptx), colnames(unreduced.ptx))) {
       run_tsne <- TRUE
     }
   }
@@ -697,7 +697,7 @@ visualizeTSNE <- function() {
     max_iter <- reproduceTSNE$maxIter
     set.seed(reproduceTSNE$seed)
     
-    tsne_result <- Rtsne::Rtsne(as.matrix(select.npx),
+    tsne_result <- Rtsne::Rtsne(as.matrix(select.ptx),
                                 dims = dims2,
                                 perplexity = perplexity,
                                 theta = theta,
@@ -707,8 +707,8 @@ visualizeTSNE <- function() {
     Y <- tsne_result$Y
     df_tsne <- data.frame(TSNE1 = Y[, 1], TSNE2 = Y[, 2])
   } else {
-    # Fallback: Use the first two columns of select.npx.
-    df_tsne <- as.data.frame(select.npx[, 1:2, drop = FALSE])
+    # Fallback: Use the first two columns of select.ptx.
+    df_tsne <- as.data.frame(select.ptx[, 1:2, drop = FALSE])
     colnames(df_tsne)[1:2] <- c("TSNE1", "TSNE2")
   }
   
