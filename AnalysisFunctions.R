@@ -34,7 +34,7 @@ analysis_main_menu <- function() {
     } else if (choice == 2) {
       merge_clusters(reproduce = NULL)  
     } else if (choice == 3) {
-      validate_df <<- validateClusterIndices(expr = select.npx,
+      validate_df <<- validateClusterIndices(expr = select.ptx,
                                              clin = select.sinfo,
                                              parse_numbers = TRUE)
     } else if (choice == 4) {
@@ -123,7 +123,7 @@ stability_analysis <- function(reproduce = NULL) {
       
       if (chosen_method == "kmeans") {
         cat("Running stability analysis for kmeans...\n")
-        bootRes <- clusterboot(select.npx, clustermethod = kmeansCBI,
+        bootRes <- clusterboot(select.ptx, clustermethod = kmeansCBI,
                                k = chosen_k, B = B, bootmethod = "boot", seed = global_seed)
         cat("Bootstrap stability (bootmean) for kmeans:\n")
         print(bootRes$bootmean)
@@ -131,7 +131,7 @@ stability_analysis <- function(reproduce = NULL) {
         
       } else if (chosen_method == "HT-Kmeans") {
         cat("Running stability analysis for HT-Kmeans...\n")
-        bootRes <- clusterboot(select.npx, clustermethod = htkmeansWrapper,
+        bootRes <- clusterboot(select.ptx, clustermethod = htkmeansWrapper,
                                k = HTKmeans_k, B = B, bootmethod = "boot", seed = global_seed)
         cat("Bootstrap stability (bootmean) for HT-Kmeans:\n")
         print(bootRes$bootmean)
@@ -139,7 +139,7 @@ stability_analysis <- function(reproduce = NULL) {
         
       } else if (chosen_method == "Fuzzy kmeans") {
         cat("Running stability analysis for Fuzzy kmeans...\n")
-        bootRes <- clusterboot(select.npx, clustermethod = fkmWrapper,
+        bootRes <- clusterboot(select.ptx, clustermethod = fkmWrapper,
                                k = chosen_k, B = B, bootmethod = "boot", seed = global_seed)
         cat("Bootstrap stability (bootmean) for Fuzzy kmeans:\n")
         print(bootRes$bootmean)
@@ -147,7 +147,7 @@ stability_analysis <- function(reproduce = NULL) {
         
       } else if (chosen_method == "DBSCAN") {
         cat("Running stability analysis for DBSCAN...\n")
-        bootRes <- clusterboot(select.npx, clustermethod = dbscanWrapper,
+        bootRes <- clusterboot(select.ptx, clustermethod = dbscanWrapper,
                                k = chosen_k, B = B, bootmethod = "boot", seed = global_seed)
         cat("Bootstrap stability (bootmean) for DBSCAN:\n")
         print(bootRes$bootmean)
@@ -155,7 +155,7 @@ stability_analysis <- function(reproduce = NULL) {
         
       } else if (chosen_method == "Hierarchical DBSCAN") {
         cat("Running stability analysis for Hierarchical DBSCAN...\n")
-        bootRes <- clusterboot(select.npx, clustermethod = hdbscanWrapper,
+        bootRes <- clusterboot(select.ptx, clustermethod = hdbscanWrapper,
                                k = chosen_k, B = B, bootmethod = "boot", seed = global_seed)
         cat("Bootstrap stability (bootmean) for Hierarchical DBSCAN:\n")
         print(bootRes$bootmean)
@@ -163,7 +163,7 @@ stability_analysis <- function(reproduce = NULL) {
         
       } else if (chosen_method == "GMM") {
         cat("Running stability analysis for GMM...\n")
-        bootRes <- clusterboot(select.npx, clustermethod = gmmWrapper_CR,
+        bootRes <- clusterboot(select.ptx, clustermethod = gmmWrapper_CR,
                                k = chosen_G, B = B, bootmethod = "boot", seed = global_seed)
         cat("Bootstrap stability (bootmean) for GMM (GMM):\n")
         print(bootRes$bootmean)
@@ -171,7 +171,7 @@ stability_analysis <- function(reproduce = NULL) {
         
       } else if (chosen_method == "Mclust") {
         cat("Running stability analysis for Mclust...\n")
-        bootRes <- clusterboot(select.npx, clustermethod = gmmWrapper,
+        bootRes <- clusterboot(select.ptx, clustermethod = gmmWrapper,
                                k = chosen_G, B = B, bootmethod = "boot", seed = global_seed)
         cat("Bootstrap stability (bootmean) for Mclust (GMM):\n")
         print(bootRes$bootmean)
@@ -179,7 +179,7 @@ stability_analysis <- function(reproduce = NULL) {
         
       } else if (chosen_method == "kmeanspp") {
         cat("Running stability analysis for kmeanspp...\n")
-        bootRes <- clusterboot(select.npx, clustermethod = kmeansppWrapper,
+        bootRes <- clusterboot(select.ptx, clustermethod = kmeansppWrapper,
                                k = chosen_k, B = B, bootmethod = "boot", seed = global_seed)
         cat("Bootstrap stability (bootmean) for kmeanspp (kmeanspp):\n")
         print(bootRes$bootmean)
@@ -187,7 +187,7 @@ stability_analysis <- function(reproduce = NULL) {
         
       } else if (chosen_method == "Spectral") {
         cat("Running stability analysis for Spectral Clustering...\n")
-        bootRes <- clusterboot(select.npx, clustermethod = speccWrapper,
+        bootRes <- clusterboot(select.ptx, clustermethod = speccWrapper,
                                k = spectral_k, B = B, bootmethod = "boot", seed = global_seed)
         cat("Bootstrap stability (bootmean) for Spectral Clustering:\n")
         print(bootRes$bootmean)
@@ -195,7 +195,7 @@ stability_analysis <- function(reproduce = NULL) {
         
       } else if (chosen_method == "Agglomerative Hierarchical") {
         cat("Running stability analysis for Agglomerative Hierarchical Clustering...\n")
-        bootRes <- clusterboot(dist(select.npx, method = hclust_dist), clustermethod = hclustCBI,
+        bootRes <- clusterboot(dist(select.ptx, method = hclust_dist), clustermethod = hclustCBI,
                                k = hclust_k, B = B, bootmethod = "boot",
                                method = hclust_method, seed = global_seed)
         cat("Bootstrap stability (bootmean) for Agglomerative Hierarchical Clustering:\n")
@@ -242,7 +242,7 @@ stability_analysis <- function(reproduce = NULL) {
         
         if (method == "Agglomerative Hierarchical") {
           bootRes <- clusterboot(
-            dist(select.npx, method = hclust_dist),
+            dist(select.ptx, method = hclust_dist),
             clustermethod = hclustCBI,
             k            = hclust_k,
             method       = hclust_method,
@@ -253,7 +253,7 @@ stability_analysis <- function(reproduce = NULL) {
         } else {
           # Default call for all other methods
           bootRes <- clusterboot(
-            select.npx,
+            select.ptx,
             clustermethod = method_function,
             k            = current_k,
             B            = B,
@@ -896,8 +896,8 @@ plotDeviationHeatmap <- function() {
   if (!exists("select.sinfo", envir = .GlobalEnv))
     stop("Global object 'select.sinfo' not found.")
   # At least one expression matrix should be present.
-  if (!exists("unadjusted.npx", envir = .GlobalEnv) && !exists("unscaled.npx", envir = .GlobalEnv))
-    stop("Neither 'unadjusted.npx' nor 'unscaled.npx' found in the global environment.")
+  if (!exists("unadjusted.ptx", envir = .GlobalEnv) && !exists("unscaled.ptx", envir = .GlobalEnv))
+    stop("Neither 'unadjusted.ptx' nor 'unscaled.ptx' found in the global environment.")
   
   # Prompt for selection of contrast from fit3 
   contrast_options <- colnames(fit3$coefficients)
@@ -965,31 +965,31 @@ plotDeviationHeatmap <- function() {
   
   # Choose Expression Matrix 
   cat("\nSelect the expression matrix to use for the heatmap:\n")
-  cat(" 1 = unadjusted.npx\n")
-  cat(" 2 = unscaled.npx\n")
-  cat(" 3 = unreduced.npx\n")
-  cat(" 4 = select.npx\n")
+  cat(" 1 = unadjusted.ptx\n")
+  cat(" 2 = unscaled.ptx\n")
+  cat(" 3 = unreduced.ptx\n")
+  cat(" 4 = select.ptx\n")
   matrix_choice <- as.integer(readline(prompt = "Enter your choice [1-4]: "))
   if (matrix_choice == 1) {
-    if (!exists("unadjusted.npx", envir = .GlobalEnv))
-      stop("Global object 'unadjusted.npx' not found.")
-    expr_matrix <- unadjusted.npx
-    cat("Using unadjusted.npx for the analysis.\n")
+    if (!exists("unadjusted.ptx", envir = .GlobalEnv))
+      stop("Global object 'unadjusted.ptx' not found.")
+    expr_matrix <- unadjusted.ptx
+    cat("Using unadjusted.ptx for the analysis.\n")
   } else if (matrix_choice == 2) {
-    if (!exists("unscaled.npx", envir = .GlobalEnv))
-      stop("Global object 'unscaled.npx' not found.")
-    expr_matrix <- unscaled.npx
-    cat("Using unscaled.npx for the analysis.\n")
+    if (!exists("unscaled.ptx", envir = .GlobalEnv))
+      stop("Global object 'unscaled.ptx' not found.")
+    expr_matrix <- unscaled.ptx
+    cat("Using unscaled.ptx for the analysis.\n")
   } else if (matrix_choice == 3) {
-    if (!exists("unreduced.npx", envir = .GlobalEnv))
-      stop("Global object 'unreduced.npx' not found.")
-    expr_matrix <- unreduced.npx
-    cat("Using unreduced.npx for the analysis.\n")
+    if (!exists("unreduced.ptx", envir = .GlobalEnv))
+      stop("Global object 'unreduced.ptx' not found.")
+    expr_matrix <- unreduced.ptx
+    cat("Using unreduced.ptx for the analysis.\n")
   } else if (matrix_choice == 4) {
-    if (!exists("select.npx", envir = .GlobalEnv))
-      stop("Global object 'select.npx' not found.")
-    expr_matrix <- select.npx
-    cat("Using select.npx for the analysis.\n")
+    if (!exists("select.ptx", envir = .GlobalEnv))
+      stop("Global object 'select.ptx' not found.")
+    expr_matrix <- select.ptx
+    cat("Using select.ptx for the analysis.\n")
   } else {
     stop("Invalid selection")
   }
