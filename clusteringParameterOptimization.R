@@ -43,11 +43,11 @@ clustering_parameter_optimization_menu <- function() {
   } else if (choice == "5") {
     run_choose_k_method()
   } else if (choice == "6") {
-    optimalClustersGMM_Function(data = select.npx)
+    optimalClustersGMM_Function(data = select.ptx)
     chosen_G <<- as.integer(
       readline(prompt = "Enter choice of G for number of clusters: "))
   } else if (choice == "7") {
-    optimal_G_Mclust(data = select.npx)
+    optimal_G_Mclust(data = select.ptx)
     chosen_G <<- as.integer(
       readline(prompt = "Enter choice of G for number of clusters: "))
     best_model <<- readline(prompt = "Enter name of best model: ")
@@ -55,32 +55,32 @@ clustering_parameter_optimization_menu <- function() {
     run_choose_G_method()
   } else if (choice == "9") {
     kmax <- as.integer(readline(prompt = "Enter choice maximum number of clusters: "))
-    spectral_eigengap(select.npx, n_eigs = kmax, return_all = TRUE)
+    spectral_eigengap(select.ptx, n_eigs = kmax, return_all = TRUE)
   } else if (choice == "10") {
-    optimizeSpectralK(data = select.npx)
+    optimizeSpectralK(data = select.ptx)
     spectral_k <<- as.integer(
       readline(prompt = "Enter choice of k for number of clusters: "))
   } else if (choice == "11") {
     spectral_k <<- as.integer(
       readline(prompt = "Enter choice of k for number of clusters: "))
   } else if (choice == "12") {
-    optimizeKmeansK(data = select.npx)
+    optimizeKmeansK(data = select.ptx)
     chosen_k <<- as.integer(
       readline(prompt = "Enter choice of k for number of clusters: ")
     )
   } else if (choice == "13") {
-    optimizeHclustK(data = select.npx)
+    optimizeHclustK(data = select.ptx)
     hclust_k <<- as.integer(
       readline(prompt = "Enter choice of k for number of clusters: ")
     )
   } else if (choice == "14") {
-    optimal_lambda_HTKmeans(select.npx, k = chosen_k)
+    optimal_lambda_HTKmeans(select.ptx, k = chosen_k)
     
   } else if (choice == "15") {
-    optimal_eps_DBSCAN(select.npx, plot_results = TRUE)
+    optimal_eps_DBSCAN(select.ptx, plot_results = TRUE)
     run_dbscan_method()
   } else if (choice == "16") {
-    optimal_minPts_hdbscan(data = select.npx, plot_results = TRUE)
+    optimal_minPts_hdbscan(data = select.ptx, plot_results = TRUE)
     run_hdbscan_method()
   } else {
     cat("Invalid choice. Please try again.\n")
@@ -94,7 +94,7 @@ run_wss_method <- function() {
   kmax <- as.integer(readline(prompt = "Enter kmax (maximum number of clusters): "))
   if (!is.na(kmax) && kmax > 0) {
     cat(sprintf("\nRunning WSS method with k.max = %d...\n", kmax))
-    wss <- fviz_nbclust(select.npx, kmeans, k.max = kmax, method = "wss", nboot = 30)
+    wss <- fviz_nbclust(select.ptx, kmeans, k.max = kmax, method = "wss", nboot = 30)
     print(wss)
   } else {
     cat("Invalid kmax. Please enter a positive integer.\n")
@@ -108,7 +108,7 @@ run_gapStat_method <- function() {
   kmax <- as.integer(readline(prompt = "Enter kmax (maximum number of clusters): "))
   if (!is.na(kmax) && kmax > 0) {
     cat(sprintf("\nRunning gap_stat method with k.max = %d...\n", kmax))
-    gapStat <-fviz_nbclust(select.npx, kmeans, k.max = kmax, 
+    gapStat <-fviz_nbclust(select.ptx, kmeans, k.max = kmax, 
                            nboot = 30,method = "gap_stat", maxSE = list(method = "Tibs2001SEmax", SE.factor = 1))
     print(gapStat)
   } else {
@@ -123,7 +123,7 @@ run_silhouette_method <- function() {
   kmax <- as.integer(readline(prompt = "Enter kmax (maximum number of clusters): "))
   if (!is.na(kmax) && kmax > 0) {
     cat(sprintf("\nRunning silhouette method with k.max = %d...\n", kmax))
-    silhouette <- fviz_nbclust(select.npx, kmeans, k.max = kmax, 
+    silhouette <- fviz_nbclust(select.ptx, kmeans, k.max = kmax, 
                                method = "silhouette", nboot = 30)
     print(silhouette)
   } else {
@@ -192,14 +192,14 @@ run_nbclust_analysis <- function() {
     }
   }
   
-  # Check that the global variable select.npx exists.
-  if (!exists("select.npx", envir = .GlobalEnv)) {
-    cat("Error: 'select.npx' not found in the workspace.\n")
+  # Check that the global variable select.ptx exists.
+  if (!exists("select.ptx", envir = .GlobalEnv)) {
+    cat("Error: 'select.ptx' not found in the workspace.\n")
     return(invisible(NULL))
   }
   
   # Create temp variable for nbclust analysis
-  data_for_nb <- select.npx
+  data_for_nb <- select.ptx
   
   cat("\nRunning NbClust Analysis with the following parameters:\n")
   cat("  Distance: 'euclidean'\n")
@@ -867,7 +867,7 @@ optimal_lambda_HTKmeans <- function(data, k, plot_results = TRUE) {
 # Optimal eps DBSCAN
 ################################################################################
 optimal_eps_DBSCAN <- function(data, minPts = NULL, plot_results = TRUE) {
-  # Ensure data variable (select.npx) is a numeric matrix.
+  # Ensure data variable (select.ptx) is a numeric matrix.
   data <- as.matrix(data)
   if (!is.numeric(data)) {
     data <- matrix(as.numeric(data), nrow = nrow(data))
@@ -949,8 +949,8 @@ run_dbscan_method <- function() {
   
   cat(sprintf("Running DBSCAN with eps = %f and minPts = %d...\n", dbscan.eps, dbscan.minPts))
   
-  if (!exists("select.npx")) {
-    cat("Dataset 'select.npx' is not available in the environment.\n")
+  if (!exists("select.ptx")) {
+    cat("Dataset 'select.ptx' is not available in the environment.\n")
     return(NULL)
   }
   if (!exists("select.sinfo")) {
@@ -959,10 +959,10 @@ run_dbscan_method <- function() {
   }
   
   # Run DBSCAN using specified eps and minPts values
-  dbs <- dbscan::dbscan(select.npx, eps = dbscan.eps, minPts = dbscan.minPts)
+  dbs <- dbscan::dbscan(select.ptx, eps = dbscan.eps, minPts = dbscan.minPts)
   
   dbscan.clusters <- dbs$cluster
-  names(dbscan.clusters) <- rownames(select.npx)
+  names(dbscan.clusters) <- rownames(select.ptx)
   dbscan.clusters <- as.factor(dbscan.clusters)
   
   # Adjust the factor levels by adding 1 so that cluster labels start at 1
@@ -1074,8 +1074,8 @@ run_hdbscan_method <- function() {
               hdbscan.minPts, hdbscan.min_cluster_size))
   
   # Check datasets
-  if (!exists("select.npx")) {
-    cat("Dataset 'select.npx' is not available in the environment.\n")
+  if (!exists("select.ptx")) {
+    cat("Dataset 'select.ptx' is not available in the environment.\n")
     return(NULL)
   }
   if (!exists("select.sinfo")) {
@@ -1084,12 +1084,12 @@ run_hdbscan_method <- function() {
   }
   
   # Run HDBSCAN
-  hdbs <- dbscan::hdbscan(select.npx, 
+  hdbs <- dbscan::hdbscan(select.ptx, 
                           minPts = hdbscan.minPts, 
                           min_cluster_size = hdbscan.min_cluster_size)
   
   hdbscan.clusters <- hdbs$cluster
-  names(hdbscan.clusters) <- rownames(select.npx)
+  names(hdbscan.clusters) <- rownames(select.ptx)
   hdbscan.clusters <- as.factor(hdbscan.clusters)
   
   # Adjust factor levels so clusters start at 1 (noise stays 0)
@@ -1102,4 +1102,3 @@ run_hdbscan_method <- function() {
   
   return(hdbscan.clusters)
 }
-
