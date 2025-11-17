@@ -237,18 +237,18 @@ create_stratus <- function(data, reproduce = NULL) {
     filtered_data <- data[data[[selected_column]] %in% selected_values, ]
     }
   stratusClust <- rownames(filtered_data)
-  bup.npx <<- select.npx
+  bup.ptx <<- select.ptx
   bup.sinfo <<- select.sinfo
-  select.npx <<- select.npx[stratusClust,]
+  select.ptx <<- select.ptx[stratusClust,]
   select.sinfo <<- select.sinfo[stratusClust,]
   
-  if(exists("unscaled.npx")){
-    bup.unscaled <<- unscaled.npx
-    unscaled.npx <<- unscaled.npx[stratusClust,]
+  if(exists("unscaled.ptx")){
+    bup.unscaled <<- unscaled.ptx
+    unscaled.ptx <<- unscaled.ptx[stratusClust,]
   }
-  if(exists("unadjusted.npx")) {
-    bup.unadjusted <<- unadjusted.npx
-    unadjusted.npx <<- unadjusted.npx[stratusClust,]
+  if(exists("unadjusted.ptx")) {
+    bup.unadjusted <<- unadjusted.ptx
+    unadjusted.ptx <<- unadjusted.ptx[stratusClust,]
   }
   
   if (selected_column == "region") {
@@ -656,6 +656,3 @@ run_tree_builder <- function(df, param_tree_builder = NULL) {
   
   invisible(tree)
 }
-
-
-
