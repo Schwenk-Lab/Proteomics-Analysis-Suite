@@ -24,12 +24,12 @@ Step 2: Install and load all packages listed in PackLoader.R
 - ProtPQN can be found on the SchwenkLab GitHub page
 
 Step 3: Prepare data
-- npx: protein abundance data (samples as rows, proteins as columns)
+- ptx: protein abundance data (samples as rows, proteins as columns)
 - sinfo: clinical information (samples as rows)
 - binfo: protein information (proteins as rows)
 
 Step 4: Start Main Menu script
-- run_main_menu(sinfo, binfo, npx)
+- run_main_menu(sinfo, binfo, ptx)
 
 Step 5: Run parameters
 - Extract data: 
@@ -59,7 +59,7 @@ Step 5: Run parameters
 
 - Exit out of the suite and run these commands in console to save time:
 	- all.sinfo <- select.sinfo
-	- all.npx <- select.npx
+	- all.ptx <- select.ptx
 
 - Start Main menu again:
 
@@ -95,7 +95,7 @@ For both cohorts:
 			- CancerTime, stratus_densearea_cm2, menopause_status, mht_status, alcohol_gram_week, smoking_status
 			- Automatic Estimation
 
-- Exit out of suite and save the region filtered npx, sinfo and binfo variables as (region).npx etc... 
+- Exit out of suite and save the region filtered ptx, sinfo and binfo variables as (region).ptx etc... 
 
 - Now start again: 
 	- For reproduction of initial PCA
@@ -138,7 +138,6 @@ For both cohorts:
 		- 200 bootstraps
 
 	- Differential Abundance Analysis:
-		- use unreduced.npx
+		- use unreduced.ptx
 	
 - Use the analysis functions further following documentation in the Thesis (such as which clusters to contrast) to replicate all analyses included in the study.
-
