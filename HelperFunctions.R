@@ -74,16 +74,16 @@ setup_variables <- function() {
             if (selected_cancer != "all") paste0(".", selected_cancer) else "",
             if (selected_panel != "all") paste0(".", selected_panel) else ""
           )
-          npx_name <- paste0(variable_name_prefix, ".npx")
+          ptx_name <- paste0(variable_name_prefix, ".ptx")
           sinfo_name <- paste0(variable_name_prefix, ".sinfo")
           binfo_name <- paste0(variable_name_prefix, ".binfo")
           
           # Retrieve objects from Global Environment
-          if (!exists(npx_name, envir = .GlobalEnv)) {
-            cat("\nVariable not found for npx:", npx_name, "\n")
+          if (!exists(ptx_name, envir = .GlobalEnv)) {
+            cat("\nVariable not found for ptx:", ptx_name, "\n")
             return(NULL)
           }
-          select.npx_obj <- get(npx_name, envir = .GlobalEnv)
+          select.ptx_obj <- get(ptx_name, envir = .GlobalEnv)
           
           if (!exists(sinfo_name, envir = .GlobalEnv)) {
             cat("\nVariable not found for sinfo:", sinfo_name, "\n")
@@ -105,11 +105,11 @@ setup_variables <- function() {
           }
           
           # Bind identified variables into new global variables
-          assign("select.npx", select.npx_obj, envir = .GlobalEnv)
+          assign("select.ptx", select.ptx_obj, envir = .GlobalEnv)
           assign("select.sinfo", select.sinfo_obj, envir = .GlobalEnv)
           assign("select.binfo", select.binfo_obj, envir = .GlobalEnv)
-          cat("\nVariables assigned successfully:\n- select.npx\n- select.sinfo\n- select.binfo\n")
-          return(list(npx = select.npx_obj,
+          cat("\nVariables assigned successfully:\n- select.ptx\n- select.sinfo\n- select.binfo\n")
+          return(list(ptx = select.ptx_obj,
                       sinfo = select.sinfo_obj,
                       binfo = select.binfo_obj))
         }
@@ -117,20 +117,20 @@ setup_variables <- function() {
     }
   } else if (source_choice == 2) {
     cat("\nYou selected 'Selected'. Binding existing variables.\n")
-    if (exists("select.npx", envir = .GlobalEnv) &&
+    if (exists("select.ptx", envir = .GlobalEnv) &&
         exists("select.sinfo", envir = .GlobalEnv) &&
         exists("select.binfo", envir = .GlobalEnv)) {
-      select.npx_obj <- get("select.npx", envir = .GlobalEnv)
+      select.ptx_obj <- get("select.ptx", envir = .GlobalEnv)
       select.sinfo_obj <- get("select.sinfo", envir = .GlobalEnv)
       select.binfo_obj <- get("select.binfo", envir = .GlobalEnv)
       
-      assign("select.npx", select.npx_obj, envir = .GlobalEnv)
+      assign("select.ptx", select.ptx_obj, envir = .GlobalEnv)
       assign("select.sinfo", select.sinfo_obj, envir = .GlobalEnv)
       assign("select.binfo", select.binfo_obj, envir = .GlobalEnv)
       
-      cat("\nVariables 'select.npx', 'select.sinfo', and 'select.binfo' 
+      cat("\nVariables 'select.ptx', 'select.sinfo', and 'select.binfo' 
           assigned successfully.\n")
-      return(list(npx = select.npx_obj,
+      return(list(ptx = select.ptx_obj,
                   sinfo = select.sinfo_obj,
                   binfo = select.binfo_obj))
       
