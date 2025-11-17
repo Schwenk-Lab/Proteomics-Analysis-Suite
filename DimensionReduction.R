@@ -20,7 +20,7 @@ dimReductionMenu <- function() {
   cat("  0 = Exit Dimensionality Reduction\n")
   
   choice <- as.numeric(readline(prompt = "Enter choice number (0-7): "))
-  unreduced.npx <<- select.npx
+  unreduced.ptx <<- select.ptx
   if (is.na(choice)) {
     cat("Invalid input. Exiting.\n")
     return(invisible(NULL))
@@ -58,8 +58,8 @@ reducePCA <- function(reproduce = NULL) {
   cat("\nPerforming PCA...\n")
   
   # Run PCA with centering and scaling
-  unreduced.npx <<- select.npx
-  pca_result <- prcomp(select.npx, center = FALSE, scale. = FALSE)
+  unreduced.ptx <<- select.ptx
+  pca_result <- prcomp(select.ptx, center = FALSE, scale. = FALSE)
   
   # Calculate variance explained by each principal component:
   variances     <- pca_result$sdev^2
@@ -133,10 +133,10 @@ reducePCA <- function(reproduce = NULL) {
   pca_loadings <- pca_result$rotation[, 1:num_components, drop = FALSE]
   assign("pca.loadings", pca_loadings, envir = .GlobalEnv)
   
-  # Update the global variable 'select.npx' with the PCA scores.
-  assign("select.npx", pc_df, envir = .GlobalEnv)
+  # Update the global variable 'select.ptx' with the PCA scores.
+  assign("select.ptx", pc_df, envir = .GlobalEnv)
   assign("reproduceDimRedPCA", reproduce, envir = .GlobalEnv) 
-  cat("\nDimensionality reduction complete. 'select.npx' now contains the PCA scores, ",
+  cat("\nDimensionality reduction complete. 'select.ptx' now contains the PCA scores, ",
       "and loadings are saved in 'pca.loadings'.\n")
 }
 
@@ -181,7 +181,7 @@ reduceSparsePCA <- function(reproduce = NULL) {
   }
   
   # Compute maximum feasible components: min(nrow - 1, ncol)
-  max_possible_comp <- min(nrow(select.npx) - 1, ncol(select.npx))
+  max_possible_comp <- min(nrow(select.ptx) - 1, ncol(select.ptx))
   if (ncomp_input > max_possible_comp) {
     cat("Requested number of components (", ncomp_input, 
         ") exceeds the maximum possible (", max_possible_comp, ").\n",
@@ -215,7 +215,7 @@ reduceSparsePCA <- function(reproduce = NULL) {
   }
   
   # Run Sparse PCA.
-  sparsePCA_model <- mixOmics::spca(select.npx, ncomp = ncomp_input, 
+  sparsePCA_model <- mixOmics::spca(select.ptx, ncomp = ncomp_input, 
                                     keepX = keepX_vals, center = F, scale = F)
   
   # Check if the model returned scores.
@@ -307,10 +307,10 @@ reduceSparsePCA <- function(reproduce = NULL) {
   
   # Update global variables.
   assign("sparsePCA.loadings", sparsePCA_loadings, envir = .GlobalEnv)
-  assign("select.npx", sparsePCA_df, envir = .GlobalEnv)
+  assign("select.ptx", sparsePCA_df, envir = .GlobalEnv)
   assign("reproduceSPCA", reproduce, envir = .GlobalEnv)
   
-  cat("\nDimensionality reduction complete. 'select.npx' now contains the Sparse PCA scores for ",
+  cat("\nDimensionality reduction complete. 'select.ptx' now contains the Sparse PCA scores for ",
       final_ncomp, " components, and loadings are saved in 'sparsePCA.loadings'.\n")
 }
 
@@ -332,7 +332,7 @@ reducePLSDA <- function(reproduce = NULL) {
   }
   
   cat("\nPerforming PLS-DA tuning...\n")
-  unreduced.npx <<- select.npx
+  unreduced.ptx <<- select.ptx
   if (is.na(reproduce$group)) {
     # Interactive selection of Grouping Variable
     if (is.data.frame(select.sinfo)) {
@@ -421,7 +421,7 @@ reducePLSDA <- function(reproduce = NULL) {
   
   # Run tune.plsda
   cat("\nTuning PLS-DA model with tune.plsda using", selected_dist, "...\n")
-  tune_res <- tune.plsda(select.npx, temp.plsda.sinfo, ncomp = ncomp_input,
+  tune_res <- tune.plsda(select.ptx, temp.plsda.sinfo, ncomp = ncomp_input,
                          validation = "Mfold", folds = 10, dist = selected_dist,
                          progressBar = TRUE, seed = global_seed, nrepeat = 5, scale = FALSE)
   
@@ -442,7 +442,7 @@ reducePLSDA <- function(reproduce = NULL) {
   
   # Run Final PLS-DA Model
   cat("\nRunning final PLS-DA model with", final_ncomp, "component(s)...\n")
-  plsda_model <- plsda(select.npx, temp.plsda.sinfo, ncomp = final_ncomp)
+  plsda_model <- plsda(select.ptx, temp.plsda.sinfo, ncomp = final_ncomp)
   
   if (is.na(reproduce$sortVar)) {
     # Prompt if to order components by variance explained
@@ -538,12 +538,12 @@ reducePLSDA <- function(reproduce = NULL) {
   plsda_loadings <- plsda_loadings[, 1:final_ncomp, drop = FALSE]
   
   assign("plsda.loadings", plsda_loadings, envir = .GlobalEnv)
-  assign("select.npx", pls_df, envir = .GlobalEnv)
+  assign("select.ptx", pls_df, envir = .GlobalEnv)
   assign("reproducePLSDA", reproduce, envir = .GlobalEnv)
   assign("temp.plsda.sinfo", temp.plsda.sinfo, envir =.GlobalEnv)
   assign("plsda.ncomp", final_ncomp, envir = .GlobalEnv)
   
-  cat("\nDimensionality reduction complete. 'select.npx' now contains the PLS-DA scores for", 
+  cat("\nDimensionality reduction complete. 'select.ptx' now contains the PLS-DA scores for", 
       final_ncomp, "component(s) (", if(order_choice == "Y") "sorted by variance" else "in extraction order", 
       "), and loadings are saved in 'plsda.loadings'.\n")
 }
@@ -661,7 +661,7 @@ reduceSPLSDA <- function(reproduce = NULL) {
   
   # Run tuning
   cat("\nTuning sPLS-DA model using tune.splsda with", ncomp_tuning, "components and distance =", selected_dist, "...\n")
-  tune_res <- tune.splsda(select.npx, temp.select.sinfo,
+  tune_res <- tune.splsda(select.ptx, temp.select.sinfo,
                           ncomp = ncomp_tuning,
                           test.keepX = candidate_keepX,
                           validation = "Mfold", folds = 10,
@@ -710,7 +710,7 @@ reduceSPLSDA <- function(reproduce = NULL) {
   
   # Run final sPLS-DA
   cat("\nRunning final sPLS-DA model with", final_ncomp, "component(s)...\n")
-  splsda_model <- splsda(select.npx, temp.select.sinfo,
+  splsda_model <- splsda(select.ptx, temp.select.sinfo,
                          ncomp = final_ncomp,
                          keepX = final_keepX)
   
@@ -747,13 +747,13 @@ reduceSPLSDA <- function(reproduce = NULL) {
   splsda_loadings <- splsda_model$loadings$X[, 1:final_ncomp, drop = FALSE]
   
   assign("splsda.loadings", splsda_loadings, envir = .GlobalEnv)
-  assign("select.npx", spls_df, envir = .GlobalEnv)
+  assign("select.ptx", spls_df, envir = .GlobalEnv)
   assign("reproduceSPLSDA", reproduce, envir = .GlobalEnv)
   assign("temp.splsda.sinfo", temp.select.sinfo, envir = .GlobalEnv)
   assign("splsda.keepX", final_keepX, envir = .GlobalEnv)
   assign("splsda.ncomp", final_ncomp, envir = .GlobalEnv)
   
-  cat("\nDimensionality reduction complete. 'select.npx' now contains the sPLS-DA scores for", 
+  cat("\nDimensionality reduction complete. 'select.ptx' now contains the sPLS-DA scores for", 
       final_ncomp, "component(s), and loadings are saved in 'splsda.loadings'.\n")
 }
 
@@ -762,9 +762,9 @@ reduceSPLSDA <- function(reproduce = NULL) {
 # Kernel PCA 
 ################################################################################
 reduceKernelPCA <- function(reproduce = NULL) {
-  # Check that select.npx is available.
-  if (!exists("select.npx") || is.null(select.npx)) {
-    cat("\nError: 'select.npx' is not available. Ensure data is loaded before kernel PCA.\n")
+  # Check that select.ptx is available.
+  if (!exists("select.ptx") || is.null(select.ptx)) {
+    cat("\nError: 'select.ptx' is not available. Ensure data is loaded before kernel PCA.\n")
     return(invisible(NULL))
   }
   if (is.null(reproduce)) {
@@ -794,7 +794,7 @@ reduceKernelPCA <- function(reproduce = NULL) {
     cat("\nComputing Kernel PCA with", features, "features and sigma =", sigmaX, "...\n")
     
     # Run kernel PCA using the rbfdot kernel.
-    kpca_result <- kernlab::kpca(as.matrix(select.npx),
+    kpca_result <- kernlab::kpca(as.matrix(select.ptx),
                                  kernel = "rbfdot",
                                  kpar = list(sigma = sigmaX),
                                  features = features)
@@ -904,7 +904,7 @@ reduceKernelPCA <- function(reproduce = NULL) {
     features <- reproduce$nFeatures
     keep <- reproduce$keep
     # Run kernel PCA using the rbfdot kernel.
-    kpca_result <- kernlab::kpca(as.matrix(select.npx),
+    kpca_result <- kernlab::kpca(as.matrix(select.ptx),
                                  kernel = "rbfdot",
                                  kpar = list(sigma = sigmaX),
                                  features = features)
@@ -914,9 +914,9 @@ reduceKernelPCA <- function(reproduce = NULL) {
     pc_coords_subset <- pc_coords[, 1:keep, drop = FALSE]
   }
   
-  # Bind selected scores to select.npx and assign to global environment 
-  assign("select.npx", as.data.frame(pc_coords_subset), envir = .GlobalEnv)
-  cat("\nKernel PCA complete. 'select.npx' is now updated with the kernel PCA scores (", 
+  # Bind selected scores to select.ptx and assign to global environment 
+  assign("select.ptx", as.data.frame(pc_coords_subset), envir = .GlobalEnv)
+  cat("\nKernel PCA complete. 'select.ptx' is now updated with the kernel PCA scores (", 
       keep, " components).\n")
 }
 
@@ -925,9 +925,9 @@ reduceKernelPCA <- function(reproduce = NULL) {
 # UMAP dimensionality reduction
 ################################################################################
 reduceUMAP <- function(reproduce = NULL) {
-  # Check that the select.npx (abundance or expression matrix) is available.
-  if (!exists("select.npx") || is.null(select.npx)) {
-    cat("\nError: 'select.npx' is not available. Ensure data is loaded before UMAP.\n")
+  # Check that the select.ptx (abundance or expression matrix) is available.
+  if (!exists("select.ptx") || is.null(select.ptx)) {
+    cat("\nError: 'select.ptx' is not available. Ensure data is loaded before UMAP.\n")
     return(invisible(NULL))
   }
   
@@ -977,7 +977,7 @@ reduceUMAP <- function(reproduce = NULL) {
         ", n_neighbors =", n_neighbors, "and seed =", seed_val, "...\n")
     
     # Create UMAP using uwot package
-    umap_result <- uwot::umap(as.matrix(select.npx),
+    umap_result <- uwot::umap(as.matrix(select.ptx),
                               n_components = ncomp,
                               n_neighbors = n_neighbors,
                               min_dist = min_dist,
@@ -1029,7 +1029,7 @@ reduceUMAP <- function(reproduce = NULL) {
     n_neighbors <- reproduce$nNeighbors
     seed_val <- reproduce$seed
     
-    umap_result <- uwot::umap(as.matrix(select.npx),
+    umap_result <- uwot::umap(as.matrix(select.ptx),
                               n_components = ncomp,
                               n_neighbors = n_neighbors,
                               min_dist = min_dist,
@@ -1038,18 +1038,18 @@ reduceUMAP <- function(reproduce = NULL) {
       
     }
   
-  # Update select.npx with the UMAP projection (assign to global environment)
-  assign("select.npx", as.data.frame(umap_result), envir = .GlobalEnv)
-  cat("\nUMAP complete. 'select.npx' is now updated with the UMAP coordinates.\n")
+  # Update select.ptx with the UMAP projection (assign to global environment)
+  assign("select.ptx", as.data.frame(umap_result), envir = .GlobalEnv)
+  cat("\nUMAP complete. 'select.ptx' is now updated with the UMAP coordinates.\n")
 }
 
 ################################################################################ 
 # t-SNE dimenionality reduction
 ################################################################################ 
 reduceTSNE <- function(reproduce = NULL) {
-  # Check that the select.npx exists.
-  if (!exists("select.npx") || is.null(select.npx)) {
-    cat("\nError: 'select.npx' is not available. Ensure data is loaded before t-SNE.\n")
+  # Check that the select.ptx exists.
+  if (!exists("select.ptx") || is.null(select.ptx)) {
+    cat("\nError: 'select.ptx' is not available. Ensure data is loaded before t-SNE.\n")
     return(invisible(NULL))
   }
   
@@ -1112,7 +1112,7 @@ reduceTSNE <- function(reproduce = NULL) {
     
     set.seed(seed_val)
     # Run t-SNE.
-    tsne_result <- Rtsne::Rtsne(as.matrix(select.npx),
+    tsne_result <- Rtsne::Rtsne(as.matrix(select.ptx),
                                 dims = dims2,
                                 perplexity = perplexity,
                                 theta = theta,
@@ -1165,7 +1165,7 @@ reduceTSNE <- function(reproduce = NULL) {
     theta <- reproduce$theta
     max_iter <- reproduce$maxIter
     set.seed(reproduce$seed)
-    tsne_result <- Rtsne::Rtsne(as.matrix(select.npx),
+    tsne_result <- Rtsne::Rtsne(as.matrix(select.ptx),
                                 dims = dims2,
                                 perplexity = perplexity,
                                 theta = theta,
@@ -1177,7 +1177,7 @@ reduceTSNE <- function(reproduce = NULL) {
     Y <- tsne_result$Y
   }
   
-  # Update select.npx with the t-SNE coordinates and assign to global environment
-  assign("select.npx", as.data.frame(Y), envir = .GlobalEnv)
-  cat("\nt-SNE complete. 'select.npx' is now updated with the t-SNE coordinates.\n")
+  # Update select.ptx with the t-SNE coordinates and assign to global environment
+  assign("select.ptx", as.data.frame(Y), envir = .GlobalEnv)
+  cat("\nt-SNE complete. 'select.ptx' is now updated with the t-SNE coordinates.\n")
 }
