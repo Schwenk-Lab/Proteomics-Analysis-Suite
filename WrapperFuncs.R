@@ -190,7 +190,7 @@ gmmWrapper_CR <- function(x, k, full_covariance = FALSE) {
 
 kmeansppWrapper <- function(x, k) {
 
-  # Ensure x (select.npx) is a matrix 
+  # Ensure x (select.ptx) is a matrix 
   data_mat <- as.matrix(x)
   
   # Run k-means++
@@ -235,6 +235,4 @@ speccWrapper <- function(x, k) {
               partition = clusters,
               nc = k))
 }
-
-
-
+                        
