@@ -69,18 +69,18 @@ createCategoricalVars <- function(sinfo, sample_id = "sample_id") {
   
   return(sinfo)
 }
-process_data <- function(sinfo, binfo, npx) {
+process_data <- function(sinfo, binfo, ptx) {
   # Make sure sample_id and individual_id are characters
   sinfo$sample_id <- as.character(sinfo$sample_id)
   sinfo$individual_id <- as.character(sinfo$individual_id)
-  npx$sample_id <- as.character(npx$sample_id)
+  ptx$sample_id <- as.character(ptx$sample_id)
   
   # Make x_BC numeric
   sinfo$x_BC <- as.numeric(as.character(sinfo$x_BC))
   
   # Remove failed samples
   sinfo <- sinfo[sinfo$sample_type != "fail", ]
-  npx <- npx[npx$sample_id %in% sinfo$sample_id, ]
+  ptx <- ptx[ptx$sample_id %in% sinfo$sample_id, ]
   
   # Create CancerTime column based on blood_draw_date and bc_invasive_1stdiagdate
   sinfo <- sinfo %>%
@@ -186,10 +186,10 @@ process_data <- function(sinfo, binfo, npx) {
     as.data.frame()  # In case the result is a tibble and you prefer a classic dataframe
   
   
-  # Set sample_id as rownames and remove sample_id column from npx
+  # Set sample_id as rownames and remove sample_id column from ptx
   rownames(sinfo) <- sinfo$sample_id
-  rownames(npx) <- npx$sample_id
-  npx <- npx[-1]  # Remove sample_id column from npx
+  rownames(ptx) <- ptx$sample_id
+  ptx <- ptx[-1]  # Remove sample_id column from ptx
   
   
   # Region selection
@@ -210,7 +210,7 @@ process_data <- function(sinfo, binfo, npx) {
     # Filter sinfo and binfo by region if applicable
     filtered_sinfo <- if (!is.null(region_filter)) sinfo %>% filter(region == region_filter) else sinfo
     filtered_binfo <- if (!is.null(region_filter)) binfo %>% filter(region == region_filter) else binfo
-    filtered_npx <- npx[rownames(npx) %in% rownames(filtered_sinfo), ]
+    filtered_ptx <- ptx[rownames(ptx) %in% rownames(filtered_sinfo), ]
     
     # Cancer selection
     cancer_options <- c("cancer", "no cancer", "all")
@@ -226,7 +226,7 @@ process_data <- function(sinfo, binfo, npx) {
       # Notify cancer selection
       cat(paste("\nCancer status selected:", selected_cancer, "\n"))
       
-      # Filter sinfo and npx by cancer status
+      # Filter sinfo and ptx by cancer status
       filtered_sinfo <- if (selected_cancer == "cancer") {
         filtered_sinfo %>% filter(x_BC == 1)
       } else if (selected_cancer == "no cancer") {
@@ -234,7 +234,7 @@ process_data <- function(sinfo, binfo, npx) {
       } else {
         filtered_sinfo
       }
-      filtered_npx <- filtered_npx[rownames(filtered_npx) %in% rownames(filtered_sinfo), ]
+      filtered_ptx <- filtered_ptx[rownames(filtered_ptx) %in% rownames(filtered_sinfo), ]
       
       # Panel selection
       panels <- c("CAM", "IMONC", "all")
@@ -255,24 +255,24 @@ process_data <- function(sinfo, binfo, npx) {
         
         # Replace invalid characters in protein names and column names
         filtered_binfo$protein_name <- gsub("[ /]", "-", filtered_binfo$protein_name)
-        colnames(filtered_npx) <- gsub("\\.", "-", colnames(filtered_npx))
+        colnames(filtered_ptx) <- gsub("\\.", "-", colnames(filtered_ptx))
         
         # For regions "stockholm" or "skane", set rownames of filtered_binfo to its protein_name column.
         if (selected_region %in% c("stockholm", "skane")) {
           rownames(filtered_binfo) <- filtered_binfo$protein_name
         }
         
-        # Matching protein names between binfo and npx
-        matching_protein_names <- intersect(filtered_binfo$protein_name, colnames(filtered_npx))
+        # Matching protein names between binfo and ptx
+        matching_protein_names <- intersect(filtered_binfo$protein_name, colnames(filtered_ptx))
         
         # Identify any mismatches (optional)
-        mismatched_protein_names <- setdiff(filtered_binfo$protein_name, colnames(filtered_npx))
+        mismatched_protein_names <- setdiff(filtered_binfo$protein_name, colnames(filtered_ptx))
         
-        # Subset npx based on matching proteins
+        # Subset ptx based on matching proteins
         if (length(matching_protein_names) > 0) {
-          filtered_npx <- filtered_npx[, matching_protein_names, drop = FALSE]
+          filtered_ptx <- filtered_ptx[, matching_protein_names, drop = FALSE]
         } else {
-          cat("\nNo matching protein names found for npx. Subsetting skipped.\n")
+          cat("\nNo matching protein names found for ptx. Subsetting skipped.\n")
         }
         
         # New prompt: remove samples with CancerTime == 2 if desired
@@ -283,16 +283,16 @@ process_data <- function(sinfo, binfo, npx) {
         if (remove_choice == 1) {
           # Remove samples with CancerTime == 1 from filtered_sinfo
           filtered_sinfo <- filtered_sinfo[filtered_sinfo$CancerTime != 2, ]
-          # Remove corresponding samples from filtered_npx based on rownames
-          filtered_npx <- filtered_npx[rownames(filtered_npx) %in% rownames(filtered_sinfo), ]
+          # Remove corresponding samples from filtered_ptx based on rownames
+          filtered_ptx <- filtered_ptx[rownames(filtered_ptx) %in% rownames(filtered_sinfo), ]
           
           # Update the variables in the Global Environment
           assign(paste0(selected_region, if(selected_cancer != "all") paste0(".", selected_cancer) else "", 
                         if(selected_panel != "all") paste0(".", selected_panel) else "", ".sinfo"), 
                  filtered_sinfo, envir = .GlobalEnv)
           assign(paste0(selected_region, if(selected_cancer != "all") paste0(".", selected_cancer) else "", 
-                        if(selected_panel != "all") paste0(".", selected_panel) else "", ".npx"), 
-                 filtered_npx, envir = .GlobalEnv)
+                        if(selected_panel != "all") paste0(".", selected_panel) else "", ".ptx"), 
+                 filtered_ptx, envir = .GlobalEnv)
           
           cat("\nSamples with CancerTime == 1 have been removed.\n")
         } else {
@@ -311,8 +311,8 @@ process_data <- function(sinfo, binfo, npx) {
         cat("\n", length(selected_proteins), "proteins found with freq_below_lod above the cutoff.\n")
         if (length(selected_proteins) > 0) {
           filtered_binfo <- filtered_binfo[!(filtered_binfo$protein_name %in% selected_proteins), ]
-          filtered_npx <- filtered_npx[, !(colnames(filtered_npx) %in% selected_proteins), drop = FALSE]
-          cat("Proteins removed from binfo and npx based on the cutoff.\n")
+          filtered_ptx <- filtered_ptx[, !(colnames(filtered_ptx) %in% selected_proteins), drop = FALSE]
+          cat("Proteins removed from binfo and ptx based on the cutoff.\n")
         } else {
           cat("No proteins were removed based on the cutoff.\n")
         }
@@ -328,7 +328,7 @@ process_data <- function(sinfo, binfo, npx) {
         # Assign the filtered data to the global environment
         assign(paste0(variable_name_prefix, ".sinfo"), filtered_sinfo, envir = .GlobalEnv)
         assign(paste0(variable_name_prefix, ".binfo"), filtered_binfo, envir = .GlobalEnv)
-        assign(paste0(variable_name_prefix, ".npx"), filtered_npx, envir = .GlobalEnv)
+        assign(paste0(variable_name_prefix, ".ptx"), filtered_ptx, envir = .GlobalEnv)
         
         cat("\nProcessing complete.\n")
         
