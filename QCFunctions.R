@@ -23,11 +23,12 @@ QC_main_menu <- function() {
     cat("  3 = Remove samples flagged with a WARNING\n")
     cat("  4 = Handle NAs\n")
     cat("  5 = Identify sample outliers with OlinkAnalyze\n")
-    cat("  6 = Identify protein outliers with PCA\n")
-    cat("  7 = Hierarchical Clustering for sample outlier identification\n")
-    cat("  8 = Protein and Sample Correlation Heatmaps\n")
+    cat("  6 = Identify sample outliers with PCA\n")
+    cat("  7 = Identify protein outliers with PCA\n")
+    cat("  8 = Hierarchical Clustering for sample outlier identification\n")
+    cat("  9 = Protein and Sample Correlation Heatmaps\n")
     cat("  0 = Exit QC Workflow\n")
-    qc_choice <- read_choice("Enter your choice [0-8]: ")
+    qc_choice <- read_choice("Enter your choice [0-9]: ")
     
     if (is.na(qc_choice) || qc_choice == 0) {
       cat("\nExiting QC workflow.\n")
@@ -46,12 +47,14 @@ QC_main_menu <- function() {
       olink_runner(select.ptx = select.ptx, select.sinfo = select.sinfo
                    , select.binfo = select.binfo)
     } else if (qc_choice == 6) {
-      run_pca_filtering_transposed(ptx = select.ptx, binfo = select.binfo,
-                                   sinfo = select.sinfo)
+      run_pca_filtering_normal(ptx = select.ptx, sinfo = select.sinfo, reproduce = NULL)
     } else if (qc_choice == 7) {
+      run_pca_filtering_proteins(ptx = select.ptx, binfo = select.binfo,
+                                   sinfo = select.sinfo, reproduce = NULL)
+    } else if (qc_choice == 8) {
       res <- run_hierarchical_clustering(ptx, sinfo)
       ptx   <- res$ptx; sinfo <- res$sinfo;
-    } else if (qc_choice == 8) {
+    } else if (qc_choice == 9) {
       analyze_correlation(reproduce = NULL)
     } else {
       cat("\nInvalid QC option. Please select again.\n")
@@ -286,140 +289,144 @@ remove_technical_duplicates <- function(sinfo, ptx, reproduce = NULL) {
 # PCA filtering of protein outliers
 ################################################################################ 
 run_pca_filtering_proteins <- function(ptx, sinfo, binfo, reproduce = NULL) {
-  if (is.null(reproduce)) {
-    reproduce <- data.frame(
-      SD = NA,
-      PC1low = NA,
-      PC1hi = NA,
-      PC2low = NA,
-      PC2hi = NA,
-      stringsAsFactors = FALSE
-    )
-  }
+  # Transpose for PCA
   ptx_trans <- t(ptx)
-  pca <- prcomp(as.data.frame(ptx_trans), scale = TRUE)
+  pca <- prcomp(as.data.frame(ptx_trans), scale. = TRUE)
   pcaX <- as.data.frame(pca$x, row.names = rownames(ptx_trans))
   pca.var <- pca$sdev^2
   pca.var.percent <- round((pca.var / sum(pca.var)) * 100, 2)
   
   if (is.null(reproduce)) {
-    # Prompt for number of standard deviations
+    # Interactive branch
     sd_factor <- as.numeric(readline(
-      prompt = "Enter the number of standard deviations to use for gridlines and flitering"
+      prompt = "Enter the number of standard deviations to use for gridlines and filtering: "
     ))
     if (is.na(sd_factor) || sd_factor <= 0) {
       sd_factor <- 3
       cat("Invalid input or non-positive value. Using default of 3.\n")
     }
-    reproduce$SD <- sd_factor
-    # compute gridline positions
+    
     xlines <- c(-sd_factor * pca$sdev[1], sd_factor * pca$sdev[1])
     ylines <- c(-sd_factor * pca$sdev[2], sd_factor * pca$sdev[2])
     
     filtering_active <- TRUE
     while (filtering_active) {
-      p <- ggplot(pcaX, aes(PC1,PC2)) +
+      p <- ggplot(pcaX, aes(PC1, PC2)) +
         geom_point() +
         geom_text(aes(label = rownames(pcaX)), hjust = 0.5, vjust = -0.5) +
         geom_vline(xintercept = xlines, linetype = "dashed", color = "red") +
-        geom_hline(xintercept = ylines, linetype = "dashed", color = "red") +
-        labs(x = pastee0("PC1: ", pca.var.percent[1], " %"),
-             y = pastee0("PC2: ", pca.var.percent[2], " %"),
-             title = "PCA-plot of proteins with Standard Deviation") +
+        geom_hline(yintercept = ylines, linetype = "dashed", color = "red") +
+        labs(x = paste0("PC1: ", pca.var.percent[1], "%"),
+             y = paste0("PC2: ", pca.var.percent[2], "%"),
+             title = "PCA plot of proteins with SD gridlines") +
         theme_minimal()
       print(p)
       
-      cat("\nPlease specify cutoffs for filtering or enter 'q' to go back:\n")
-     
-       # PC1 min
+      cat("\nPlease specify cutoffs for filtering or enter 'q' to quit:\n")
+      
+      # PC1 min
       pc1_min_input <- trimws(readline(
-        prompt = paste0("Enter lower cutoff for PC1 (suggestion: ", 
-                        round(xlines[1], 2),"): ")
+        prompt = paste0("Enter lower cutoff for PC1 (suggestion: ", round(xlines[1], 2), "): ")
       ))
-      if (pc1_min_input == "q") { cat("Returning to PCA menu.\n"); break }
+      if (pc1_min_input == "q") {
+        cat("Returning to PCA menu.\n")
+        return(list(ptx = as.data.frame(t(ptx_trans)), sinfo = sinfo, binfo = binfo))
+      }
       pc1_min <- as.numeric(pc1_min_input)
       
       # PC1 max
       pc1_max_input <- trimws(readline(
-        prompt = paste0("Enter upper cutoff for PC1 (suggestion: ", 
-                        round(xlines[2], 2),"): ")
+        prompt = paste0("Enter upper cutoff for PC1 (suggestion: ", round(xlines[2], 2), "): ")
       ))
-      if (pc1_max_input == "q") { cat("Returning to PCA menu.\n"); break }
+      if (pc1_max_input == "q") {
+        cat("Returning to PCA menu.\n")
+        return(list(ptx = as.data.frame(t(ptx_trans)), sinfo = sinfo, binfo = binfo))
+      }
       pc1_max <- as.numeric(pc1_max_input)
       
       # PC2 min
       pc2_min_input <- trimws(readline(
-        prompt = paste0("Enter lower cutoff for PC1 (suggestion: ", 
-                        round(ylines[1], 2),"): ")
+        prompt = paste0("Enter lower cutoff for PC2 (suggestion: ", round(ylines[1], 2), "): ")
       ))
-      if (pc2_min_input == "q") { cat("Returning to PCA menu.\n"); break }
+      if (pc2_min_input == "q") {
+        cat("Returning to PCA menu.\n")
+        return(list(ptx = as.data.frame(t(ptx_trans)), sinfo = sinfo, binfo = binfo))
+      }
       pc2_min <- as.numeric(pc2_min_input)
       
-      # PC1 max
+      # PC2 max
       pc2_max_input <- trimws(readline(
-        prompt = paste0("Enter upper cutoff for PC1 (suggestion: ", 
-                        round(ylines[2], 2),"): ")
+        prompt = paste0("Enter upper cutoff for PC2 (suggestion: ", round(ylines[2], 2), "): ")
       ))
-      if (pc2_max_input == "q") { cat("Returning to PCA menu.\n"); break }
+      if (pc2_max_input == "q") {
+        cat("Returning to PCA menu.\n")
+        return(list(ptx = as.data.frame(t(ptx_trans)), sinfo = sinfo, binfo = binfo))
+      }
       pc2_max <- as.numeric(pc2_max_input)
       
-      if (is.na(pc1_min) || is.na(pc1_max) || is.na(pc2_min) || is.na(pc2_max)) {
-        cat("Invaid numeric input. Try again.\n")
+      if (any(is.na(c(pc1_min, pc1_max, pc2_min, pc2_max)))) {
+        cat("Invalid numeric input. Try again.\n")
         next
       }
       
-      reproduce$PC1low <- pc1_min
-      reproduce$PC1hi <- pc1_max
-      reproduce$PC2low <- pc2_min
-      reproduce$PC2hi <- pc2_max
-      
-      # Determine observations passing filtering criteria
+      # Apply filtering
       filtered_indices <- which(pcaX$PC1 >= pc1_min & pcaX$PC1 <= pc1_max &
                                   pcaX$PC2 >= pc2_min & pcaX$PC2 <= pc2_max)
-      if (lenght(filterd_indices) > 0) {
+      if (length(filtered_indices) > 0) {
         ptx_trans <- ptx_trans[filtered_indices, , drop = FALSE]
         cat("Filtering applied. Remaining number of proteins: ", nrow(ptx_trans), "\n")
+      } else {
+        cat("Warning: No proteins met the cutoff criteria. No changes made.\n")
       }
-      else {
-        cat("Warning: No proteins met the cutoff criteria. No changes made. \n")
-      }
-      cat("Returning to PCA menu...\n")
+      
       filtering_active <- FALSE
     }
+    
     cat("Transposing matrix back to original state...\n")
-    ptx <- as.dataframe(t(ptx_trans))
-    rownames(ptx) <- rownames(select.sinfo)
+    ptx <- as.data.frame(t(ptx_trans))
+    rownames(ptx) <- rownames(sinfo)
+    
+    reproduce <- data.frame(
+      SD = sd_factor,
+      PC1low = pc1_min,
+      PC1hi = pc1_max,
+      PC2low = pc2_min,
+      PC2hi = pc2_max,
+      stringsAsFactors = FALSE
+    )
     
   } else {
-    # compute gridline positions
+    # Reproduce branch
     sd_factor <- reproduce$SD
     xlines <- c(-sd_factor * pca$sdev[1], sd_factor * pca$sdev[1])
     ylines <- c(-sd_factor * pca$sdev[2], sd_factor * pca$sdev[2])
-    pca_protein_outlier_plot <<- ggplot(pcaX, aes(PC1,PC2)) +
+    
+    pca_protein_outlier_plot <<- ggplot(pcaX, aes(PC1, PC2)) +
       geom_point() +
       geom_text(aes(label = rownames(pcaX)), hjust = 0.5, vjust = -0.5) +
       geom_vline(xintercept = xlines, linetype = "dashed", color = "red") +
-      geom_hline(xintercept = ylines, linetype = "dashed", color = "red") +
-      labs(x = pastee0("PC1: ", pca.var.percent[1], " %"),
-           y = pastee0("PC2: ", pca.var.percent[2], " %"),
-           title = "PCA-plot of proteins with Standard Deviation") +
+      geom_hline(yintercept = ylines, linetype = "dashed", color = "red") +
+      labs(x = paste0("PC1: ", pca.var.percent[1], "%"),
+           y = paste0("PC2: ", pca.var.percent[2], "%"),
+           title = "PCA plot of proteins with SD gridlines") +
       theme_minimal()
     
-    pc1_min <- reproduce$PC1low  
-    pc1_max <- reproduce$PC1hi 
-    pc2_min <- reproduce$PC2low 
+    pc1_min <- reproduce$PC1low
+    pc1_max <- reproduce$PC1hi
+    pc2_min <- reproduce$PC2low
     pc2_max <- reproduce$PC2hi
+    
     filtered_indices <- which(pcaX$PC1 >= pc1_min & pcaX$PC1 <= pc1_max &
                                 pcaX$PC2 >= pc2_min & pcaX$PC2 <= pc2_max)
     ptx_trans <- ptx_trans[filtered_indices, , drop = FALSE]
-    ptx <- as.dataframe(t(ptx_trans))
-    rownames(ptx) <- rownames(select.sinfo)
+    ptx <- as.data.frame(t(ptx_trans))
+    rownames(ptx) <- rownames(sinfo)
   }
-  # Update binfo and assign ptx and binfo to global environment
-  select.binfo <<- select.binfo[select.binfo$protein_name %in% colnames(ptx), ,
-                                drop = FALSE]
+  
+  # Update binfo and assign to global environment
+  binfo <- binfo[binfo$protein_name %in% colnames(ptx), , drop = FALSE]
   assign("select.ptx", ptx, envir = .GlobalEnv)
-  assign("select.binfo", select.binfo, .GlobalEnv)
+  assign("select.binfo", binfo, envir = .GlobalEnv)
   assign("reproducePCAproteinFilter", reproduce, envir = .GlobalEnv)
   
   return(list(ptx = ptx, sinfo = sinfo, binfo = binfo))
@@ -1177,4 +1184,137 @@ reverse_convert_to_olink_long <- function(olink_long_data) {
   return(list(cleaned.ptx = cleaned.ptx,
               cleaned.sinfo = cleaned.sinfo,
               cleaned.binfo = cleaned.binfo))
+}
+
+################################################################################ 
+# Basic PCA filtering function (without OlinkAnalyze)
+################################################################################
+run_pca_filtering_normal <- function(ptx, sinfo, reproduce = NULL) {
+  # Compute PCA
+  pca <- prcomp(as.data.frame(ptx), scale. = FALSE)
+  pcaX <- as.data.frame(pca$x, row.names = rownames(ptx))
+  pca.var <- pca$sdev^2
+  pca.var.percent <- round((pca.var / sum(pca.var)) * 100, 2)
+  
+  if (is.null(reproduce)) {
+    # --- Prompt for SD factor ---
+    sd_factor <- as.numeric(readline(
+      prompt = "Enter the number of standard deviations to use for gridlines and filtering (default is 3): "
+    ))
+    if (is.na(sd_factor) || sd_factor <= 0) {
+      sd_factor <- 3
+      cat("Invalid input or non-positive value. Using default value of 3.\n")
+    }
+    
+    xlines <- c(-sd_factor * pca$sdev[1], sd_factor * pca$sdev[1])
+    ylines <- c(-sd_factor * pca$sdev[2], sd_factor * pca$sdev[2])
+    
+    # --- Plot ---
+    p <- ggplot(pcaX, aes(PC1, PC2)) +
+      geom_point() +
+      geom_text(aes(label = rownames(pcaX)), hjust = 0.5, vjust = -0.5) +
+      geom_vline(xintercept = xlines, linetype = "dashed", color = "red") +
+      geom_hline(yintercept = ylines, linetype = "dashed", color = "red") +
+      labs(x = paste0("PC1: ", pca.var.percent[1], " %"),
+           y = paste0("PC2: ", pca.var.percent[2], " %"),
+           title = "PCA Plot with Filtering") +
+      theme_minimal()
+    print(p)
+    
+    # --- Prompt cutoffs ---
+    cat("\nPlease specify cutoffs for filtering or enter 'q' to quit filtering:\n")
+    
+    pc1_min_input <- trimws(readline(
+      prompt = paste0("Enter lower cutoff for PC1 (suggestion: ", round(xlines[1], 2), "): ")
+    ))
+    if (pc1_min_input == "q") {
+      cat("Returning to PCA menu.\n")
+      return(list(ptx = ptx, sinfo = sinfo))
+    }
+    pc1_min <- as.numeric(pc1_min_input)
+    
+    pc1_max_input <- trimws(readline(
+      prompt = paste0("Enter upper cutoff for PC1 (suggestion: ", round(xlines[2], 2), "): ")
+    ))
+    if (pc1_max_input == "q") {
+      cat("Returning to PCA menu.\n")
+      return(list(ptx = ptx, sinfo = sinfo))
+    }
+    pc1_max <- as.numeric(pc1_max_input)
+    
+    pc2_min_input <- trimws(readline(
+      prompt = paste0("Enter lower cutoff for PC2 (suggestion: ", round(ylines[1], 2), "): ")
+    ))
+    if (pc2_min_input == "q") {
+      cat("Returning to PCA menu.\n")
+      return(list(ptx = ptx, sinfo = sinfo))
+    }
+    pc2_min <- as.numeric(pc2_min_input)
+    
+    pc2_max_input <- trimws(readline(
+      prompt = paste0("Enter upper cutoff for PC2 (suggestion: ", round(ylines[2], 2), "): ")
+    ))
+    if (pc2_max_input == "q") {
+      cat("Returning to PCA menu.\n")
+      return(list(ptx = ptx, sinfo = sinfo))
+    }
+    pc2_max <- as.numeric(pc2_max_input)
+    
+    if (any(is.na(c(pc1_min, pc1_max, pc2_min, pc2_max)))) {
+      cat("Invalid numeric input. Returning without filtering.\n")
+      return(list(ptx = ptx, sinfo = sinfo))
+    }
+    
+    # --- Apply filtering ---
+    filtered_indices <- which(pcaX$PC1 >= pc1_min & pcaX$PC1 <= pc1_max &
+                                pcaX$PC2 >= pc2_min & pcaX$PC2 <= pc2_max)
+    if (length(filtered_indices) > 0) {
+      ptx <- ptx[filtered_indices, , drop = FALSE]
+      sinfo <- sinfo[rownames(sinfo) %in% rownames(ptx), , drop = FALSE]
+      assign("select.ptx", ptx, .GlobalEnv)
+      assign("select.sinfo", sinfo, .GlobalEnv)
+      cat("Filtering applied. Remaining samples:", nrow(ptx), "\n")
+    } else {
+      cat("Warning: No samples met the cutoff criteria. No changes made.\n")
+    }
+    
+    # Save reproducibility object
+    reproduce <- data.frame(
+      SD = sd_factor,
+      PC1low = pc1_min,
+      PC1hi = pc1_max,
+      PC2low = pc2_min,
+      PC2hi = pc2_max,
+      stringsAsFactors = FALSE
+    )
+    
+  } else {
+    # --- Reproduce branch ---
+    sd_factor <- reproduce$SD
+    xlines <- c(-sd_factor * pca$sdev[1], sd_factor * pca$sdev[1])
+    ylines <- c(-sd_factor * pca$sdev[2], sd_factor * pca$sdev[2])
+    
+    pca_plot_normal <<- ggplot(pcaX, aes(PC1, PC2)) +
+      geom_point() +
+      geom_text(aes(label = rownames(pcaX)), hjust = 0.5, vjust = -0.5) +
+      geom_vline(xintercept = xlines, linetype = "dashed", color = "red") +
+      geom_hline(yintercept = ylines, linetype = "dashed", color = "red") +
+      labs(x = paste0("PC1: ", pca.var.percent[1], " %"),
+           y = paste0("PC2: ", pca.var.percent[2], " %"),
+           title = "PCA Plot with Filtering") +
+      theme_minimal()
+    
+    pc1_min <- reproduce$PC1low
+    pc1_max <- reproduce$PC1hi
+    pc2_min <- reproduce$PC2low
+    pc2_max <- reproduce$PC2hi
+    
+    filtered_indices <- which(pcaX$PC1 >= pc1_min & pcaX$PC1 <= pc1_max &
+                                pcaX$PC2 >= pc2_min & pcaX$PC2 <= pc2_max)
+    ptx <- ptx[filtered_indices, , drop = FALSE]
+    sinfo <- sinfo[rownames(sinfo) %in% rownames(ptx), , drop = FALSE]
+  }
+  
+  assign("reproducePCAfilterNormal", reproduce, envir = .GlobalEnv)
+  return(list(ptx = ptx, sinfo = sinfo))
 }
